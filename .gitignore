@@ -1,0 +1,7 @@
+*.pth
+*.pkl
+__pycache__/
+*.txt
+!work_on_*.txt
+dataset/
+venv/
