@@ -78,7 +78,7 @@ def evaluate_model(model, train_loader):
     print()
 
     print("Overall Accuracy:")
-    print((data_frame.tp()+data_frame.tn)/(data_frame.tp()+data_frame.tn()+data_frame.fn()+data_frame.fp()+))
+    print((data_frame.tp()+data_frame.tn)/(data_frame.tp()+data_frame.tn()+data_frame.fn()+data_frame.fp()))
 
     tpr_parity, fpr_parity = equality_of_odds_parity(data=data_frame, one=False)
     print("True Positive Parity:")
