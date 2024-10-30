@@ -105,7 +105,7 @@ A repository dedicated to developing and evaluating fair deepfake image detectio
 
 ## Usage
 
-### Data Preparation
+### Dataset Source
 
 I have prepared dataset from Kaggle: https://www.kaggle.com/datasets/manjilkarki/deepfake-and-real-images
 
@@ -119,6 +119,8 @@ and Isao Echizen},
   Year           = {2021},
 }
 ```
+
+Zip can be downloaded from m [GDrive](https://drive.google.com/file/d/1nduIze2HqEDmoT8FbByIDGsqW-9uHN-J/view?usp=sharing).
 
 Gender and race attribution was done using `DeepFace` framework + manual corrections.
 
