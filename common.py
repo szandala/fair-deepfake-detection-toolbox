@@ -15,8 +15,6 @@ class FairDataset(Dataset):
                 line = line.rstrip()
                 img_path, expected, predicted, gender, race = line.split()
                 imgs.append((img_path, expected, predicted, gender, race))
-
-
         else:
             for line in f:
                 line = line.rstrip()

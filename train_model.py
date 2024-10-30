@@ -14,7 +14,7 @@ from my_models import tip_learning, vit
 # MODEL_PATH = "deepfake_c0_xception.pkl"
 N_EPOCHS = 10
 BATCH_SIZE = 128
-IMAGES_LIST_TXT= "work_on_eq_validate.txt"
+IMAGES_LIST_TXT= "work_on_train.txt"
 
 model = vit()
 model.train()
@@ -80,7 +80,7 @@ for epoch in range(N_EPOCHS):
             running_loss = 0.0
 
     scheduler.step()
-    torch.save(model.state_dict(), f"model_epoch_{epoch + 1}-preprocessed.pth")
+    torch.save(model.state_dict(), f"model_epoch_{epoch + 1}.pth")
 
 print("Finished Training")
 
