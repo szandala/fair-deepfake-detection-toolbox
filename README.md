@@ -163,12 +163,12 @@ This script will output confusion matrix and fairness metrics for each demograph
 ## Fairness Metrics Explained
 | Metric                    | Equivalent Term         | Focus               | Dependency                                                       | Formula            |
 |---------------------------|-------------------------|---------------------|------------------------------------------------------------------|---------------------|
-| Accuracy                  | -                       | Overall correct classifications | -                                                                | $ \frac{TP + TN}{TP + TN + FP + FN} $ |
-| True Positive Parity      | Recall / Sensitivity    | Actual Positives    | High TPP indicates good recall and low false negatives.          | $ \frac{TP}{TP + FN} $               |
-| False Positive Parity     | False Positive Rate     | Actual Negatives    | Complementary to Specificity; balancing FPP prevents bias in negative misclassifications. | $ \frac{FP}{FP + TN} $ |
-| Positive Predictive Value | Precision               | Predicted Positives | Balances with Recall; indicates low FP rate among positives.     | $ \frac{TP}{TP + FP} $               |
-| Negative Predictive Value | -                       | Predicted Negatives | Complements PPV; indicates low FN rate among negatives.          | $ \frac{TN}{TN + FN} $               |
-| Specificity               | True Negative Rate      | Actual Negatives    | Complements FPR; indicates accuracy in predicting negatives.     | $ \frac{TN}{TN + FP} $               |
+| Accuracy                  | -                       | Overall correct classifications | -                                                                | $\frac{TP + TN}{TP + TN + FP + FN}$|
+| True Positive Parity      | Recall / Sensitivity    | Actual Positives    | High TPP indicates good recall and low false negatives.          | $\frac{TP}{TP + FN}$              |
+| False Positive Parity     | False Positive Rate     | Actual Negatives    | Complementary to Specificity; balancing FPP prevents bias in negative misclassifications. | $\frac{FP}{FP + TN}$|
+| Positive Predictive Value | Precision               | Predicted Positives | Balances with Recall; indicates low FP rate among positives.     | $\frac{TP}{TP + FP}$              |
+| Negative Predictive Value | -                       | Predicted Negatives | Complements PPV; indicates low FN rate among negatives.          | $\frac{TN}{TN + FN}$              |
+| Specificity               | True Negative Rate      | Actual Negatives    | Complements FPR; indicates accuracy in predicting negatives.     | $\frac{TN}{TN + FP}$               |
 
 
 ### Equality of Odds Parity
