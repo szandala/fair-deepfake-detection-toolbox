@@ -161,7 +161,7 @@ This script will output confusion matrix and fairness metrics for each demograph
 ---
 
 ## Fairness Metrics Explained
-| Metric                    | Equivalent Term         | Focus               | Dependency                                                       | Formula            |
+| Metric                    | Equivalent Term         | Focus               | Description                                                       | Formula            |
 |---------------------------|-------------------------|---------------------|------------------------------------------------------------------|---------------------|
 | Accuracy                  | -                       | Overall correct classifications | -                                                                | $\frac{TP + TN}{TP + TN + FP + FN}$|
 | True Positive Parity      | Recall / Sensitivity    | Actual Positives    | High TPP indicates good recall and low false negatives.          | $\frac{TP}{TP + FN}$              |
@@ -173,13 +173,17 @@ This script will output confusion matrix and fairness metrics for each demograph
 
 ### Equality of Odds Parity
 
-Equality of Odds Parity assesses whether the model's true positive and false positive rates are equal across different demographic groups. A model satisfies Equality of Odds if these rates are the same for all groups.
-
-
+Equality of Odds Parity assesses whether the model's true positive and false positive rates are equal across different demographic groups. A model satisfies Equality of Odds if these rates are the same for all groups.\
+Metrics:
+- True Positive Parity
+- False Positive Parity
 
 ### Predictive Value Parity
 
-Predictive Value Parity checks if the positive predictive value (precision) and negative predictive value are equal across demographic groups. This ensures that the likelihood of a prediction being correct is the same for all groups.
+Predictive Value Parity checks if the positive predictive value (precision) and negative predictive value are equal across demographic groups. This ensures that the likelihood of a prediction being correct is the same for all groups.\
+Metrics:
+- Positive Predictive Value
+- Negative Predictive Value
 
 ---
 
