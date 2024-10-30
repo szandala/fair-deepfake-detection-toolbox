@@ -8,7 +8,7 @@ from icecream import ic
 
 from my_models import vit
 
-MODEL_PATH = "model_epoch_10-preprocessed.pth"
+MODEL_PATH = "model_epoch_10.pth"
 BATCH_SIZE = 128
 IMAGES_LIST_TXT= "work_on_test.txt"
 
@@ -76,6 +76,9 @@ def evaluate_model(model, train_loader):
     print("Confusion Matrices per Group for training:")
     print(confusion_matrices)
     print()
+
+    print("Overall Accuracy:")
+    print((data_frame.tp()+data_frame.tn)/(data_frame.tp()+data_frame.tn()+data_frame.fn()+data_frame.fp()+))
 
     tpr_parity, fpr_parity = equality_of_odds_parity(data=data_frame, one=False)
     print("True Positive Parity:")

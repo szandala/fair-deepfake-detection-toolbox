@@ -75,7 +75,10 @@ def compute_fairness_loss(labels, preds, sensitive_features):
     )
 
     # Fairness loss is the deviation from perfect parity (which is 1)
-    fairness_loss = (1 - tpr_parity) ** 2 + (1 - fpr_parity) ** 2
+    fairness_loss = (1 - tpr_parity) ** 2
+    # TODO: this might be risky as FPR should go to 0.0,
+    # so overall, in perfect world, it would be 0/0 to get min/max
+    # + (1 - fpr_parity) ** 2
     fairness_loss = torch.tensor(fairness_loss, device=labels.device, dtype=torch.float)
 
     return fairness_loss
