@@ -1,5 +1,5 @@
 import pandas as pd
-from functools import cache
+# from functools import cache
 from torch import tensor, long
 from torch.utils.data import Dataset
 from PIL import Image
@@ -60,37 +60,37 @@ class DataFrame:
             return self.data[self.data["Group"] == group]
         return self.data
 
-    @cache
+    #@cache
     def tp(self, group=None):
         group_data = self._group_data(group)
         tp = ((group_data["Expected"] == 1) & (group_data["Predicted"] == 1)).sum()
         return tp
 
-    @cache
+    #@cache
     def tn(self, group=None):
         group_data = self._group_data(group)
         tn = ((group_data["Expected"] == 0) & (group_data["Predicted"] == 0)).sum()
         return tn
 
-    @cache
+    #@cache
     def fp(self, group=None):
         group_data = self._group_data(group)
         fp = ((group_data["Expected"] == 0) & (group_data["Predicted"] == 1)).sum()
         return fp
 
-    @cache
+    #@cache
     def fn(self, group=None):
         group_data = self._group_data(group)
         fn = ((group_data["Expected"] == 1) & (group_data["Predicted"] == 0)).sum()
         return fn
 
-    @cache
+    #@cache
     def accuracy(self, group=None):
         return (self.tp(group) + self.tn(group)) / (
             self.tp(group) + self.tn(group) + self.fp(group) + self.fn(group)
         )
 
-    @cache
+    #@cache
     def confusion_matrix(self, group=None):
         return {
             "TP": self.tp(group),
