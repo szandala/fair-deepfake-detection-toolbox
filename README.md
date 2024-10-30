@@ -107,8 +107,20 @@ A repository dedicated to developing and evaluating fair deepfake image detectio
 
 ### Data Preparation
 
-I have prepared dataset from Kaggle: TODO put URL here
+I have prepared dataset from Kaggle: https://www.kaggle.com/datasets/manjilkarki/deepfake-and-real-images
 
+```tex
+@Inproceedings{ltnghia-ICCV2021,
+  Title          = {OpenForensics: Large-Scale Challenging Dataset For
+Multi-Face Forgery Detection And Segmentation In-The-Wild},
+  Author         = {Trung-Nghia Le and Huy H. Nguyen and Junichi Yamagishi
+and Isao Echizen},
+  BookTitle      = {International Conference on Computer Vision},
+  Year           = {2021},
+}
+```
+
+Gender and race attribution was done using `DeepFace` framework + manual corrections.
 
 ### Training Models
 
@@ -149,10 +161,21 @@ This script will output confusion matrix and fairness metrics for each demograph
 ---
 
 ## Fairness Metrics Explained
+| Metric                    | Equivalent Term         | Focus               | Dependency                                                       | Formula            |
+|---------------------------|-------------------------|---------------------|------------------------------------------------------------------|---------------------|
+| Accuracy                  | -                       | Overall correct classifications | -                                                                | $ \frac{TP + TN}{TP + TN + FP + FN} $ |
+| True Positive Parity      | Recall / Sensitivity    | Actual Positives    | High TPP indicates good recall and low false negatives.          | $ \frac{TP}{TP + FN} $               |
+| False Positive Parity     | False Positive Rate     | Actual Negatives    | Complementary to Specificity; balancing FPP prevents bias in negative misclassifications. | $ \frac{FP}{FP + TN} $ |
+| Positive Predictive Value | Precision               | Predicted Positives | Balances with Recall; indicates low FP rate among positives.     | $ \frac{TP}{TP + FP} $               |
+| Negative Predictive Value | -                       | Predicted Negatives | Complements PPV; indicates low FN rate among negatives.          | $ \frac{TN}{TN + FN} $               |
+| Specificity               | True Negative Rate      | Actual Negatives    | Complements FPR; indicates accuracy in predicting negatives.     | $ \frac{TN}{TN + FP} $               |
+
 
 ### Equality of Odds Parity
 
 Equality of Odds Parity assesses whether the model's true positive and false positive rates are equal across different demographic groups. A model satisfies Equality of Odds if these rates are the same for all groups.
+
+
 
 ### Predictive Value Parity
 
