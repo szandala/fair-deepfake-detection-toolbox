@@ -20,28 +20,8 @@ model = vit()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = model.to(device)
 
-# transform = transforms.Compose([
-#     # Resize images to the size expected by the model
-#     transforms.Resize((224, 224)),
-#     transforms.ToTensor(),
-#     # Add normalization if required by your model
-#     transforms.Normalize(mean=[0.5] * 3, std=[0.5] * 3)
-# ])
-
-# Dataset prepare
-# train_dataset = FairDataset(
-#     txt_path=IMAGES_LIST_TXT,
-#     transformation_function=transform,
-#     with_predicted=False
-# )
 train_loader = _prepare_dataset_loader(IMAGES_LIST_TXT)
-# DataLoader(
-#     train_dataset,
-#     batch_size=BATCH_SIZE,
-#     shuffle=True,
-#     drop_last=False,
-#     num_workers=8
-# )
+test_dataset_loader = _prepare_dataset_loader("work_on_test.txt")
 
 # Train parameters prepare
 criterion = nn.CrossEntropyLoss()
@@ -53,12 +33,10 @@ optimizer = optim.Adam(
 )
 scheduler = lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.5)
 
-test_dataset_loader = _prepare_dataset_loader("work_on_test.txt")
-
 for epoch in range(N_EPOCHS):
     running_loss = 0.0
     model.train() # in case I change in eval into model.eval()
-    model = tip_learning(model)
+    # model = tip_learning(model)
     for i, data in enumerate(train_loader):
         inputs, labels, _ = data
         inputs, labels = inputs.to(device), labels.to(device)
@@ -81,7 +59,7 @@ for epoch in range(N_EPOCHS):
             running_loss = 0.0
 
     scheduler.step()
-    acc , _ = evaluate_model(model, test_dataset_loader, suppres_printing=True)
-    torch.save(model.state_dict(), f"model_tip_train_e{epoch + 1}_acc{acc:.3f}.pth")
+    acc, _ = evaluate_model(model, test_dataset_loader, suppres_printing=True)
+    torch.save(model.state_dict(), f"model_full_train_e{epoch + 1}_acc{acc:.3f}.pth")
 
 print("Finished Training")

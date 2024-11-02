@@ -19,7 +19,6 @@ def _load_model(model_path=MODEL_PATH):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = model.to(device)
 
-
     return model
 
 def _prepare_dataset_loader(images_list_txt=IMAGES_LIST_TXT, batch_size=BATCH_SIZE):
