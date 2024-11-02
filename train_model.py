@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 from common import FairDataset, DataFrame
 from fairness_metrics import equality_of_odds_parity, predictive_value_parity
 from icecream import ic
-from evaluate_fairness import evaluate_model, _prepare_dataset
+from evaluate_fairness import evaluate_model, _prepare_dataset_loader
 
 from my_models import tip_learning, vit
 
@@ -20,27 +20,28 @@ model = vit()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = model.to(device)
 
-transform = transforms.Compose([
-    # Resize images to the size expected by the model
-    transforms.Resize((224, 224)),
-    transforms.ToTensor(),
-    # Add normalization if required by your model
-    transforms.Normalize(mean=[0.5] * 3, std=[0.5] * 3)
-])
+# transform = transforms.Compose([
+#     # Resize images to the size expected by the model
+#     transforms.Resize((224, 224)),
+#     transforms.ToTensor(),
+#     # Add normalization if required by your model
+#     transforms.Normalize(mean=[0.5] * 3, std=[0.5] * 3)
+# ])
 
 # Dataset prepare
-train_dataset = FairDataset(
-    txt_path=IMAGES_LIST_TXT,
-    transformation_function=transform,
-    with_predicted=False
-)
-train_loader = DataLoader(
-    train_dataset,
-    batch_size=BATCH_SIZE,
-    shuffle=True,
-    drop_last=False,
-    num_workers=8
-)
+# train_dataset = FairDataset(
+#     txt_path=IMAGES_LIST_TXT,
+#     transformation_function=transform,
+#     with_predicted=False
+# )
+train_loader = _prepare_dataset_loader(IMAGES_LIST_TXT)
+# DataLoader(
+#     train_dataset,
+#     batch_size=BATCH_SIZE,
+#     shuffle=True,
+#     drop_last=False,
+#     num_workers=8
+# )
 
 # Train parameters prepare
 criterion = nn.CrossEntropyLoss()
@@ -52,7 +53,7 @@ optimizer = optim.Adam(
 )
 scheduler = lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.5)
 
-test_dataset = _prepare_dataset("work_on_test.txt")
+test_dataset_loader = _prepare_dataset_loader("work_on_test.txt")
 
 for epoch in range(N_EPOCHS):
     running_loss = 0.0
@@ -80,7 +81,7 @@ for epoch in range(N_EPOCHS):
             running_loss = 0.0
 
     scheduler.step()
-    acc , _ = evaluate_model(model, test_loader)
+    acc , _ = evaluate_model(model, test_dataset_loader, suppres_printing=True)
     torch.save(model.state_dict(), f"model_tip_train_e{epoch + 1}_acc{acc:.3f}.pth")
 
 print("Finished Training")

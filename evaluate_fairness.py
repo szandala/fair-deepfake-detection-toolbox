@@ -22,7 +22,7 @@ def _load_model(model_path=MODEL_PATH):
 
     return model
 
-def _prepare_dataset(images_list_txt=IMAGES_LIST_TXT, batch_size=BATCH_SIZE):
+def _prepare_dataset_loader(images_list_txt=IMAGES_LIST_TXT, batch_size=BATCH_SIZE):
     transform = transforms.Compose([
         # Resize images to the size expected by the model
         transforms.Resize((224, 224)),
