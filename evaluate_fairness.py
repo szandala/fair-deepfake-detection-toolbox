@@ -12,12 +12,17 @@ MODEL_PATH = "model_epoch_10.pth"
 BATCH_SIZE = 128
 IMAGES_LIST_TXT= "work_on_test.txt"
 
-def _prepare():
+
+def _load_model(model_path=MODEL_PATH):
     model = vit()
-    model.load_state_dict(torch.load(MODEL_PATH,  weights_only=False))
+    model.load_state_dict(torch.load(model_path,  weights_only=False))
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = model.to(device)
 
+
+    return model
+
+def _prepare_dataset(images_list_txt=IMAGES_LIST_TXT, batch_size=BATCH_SIZE):
     transform = transforms.Compose([
         # Resize images to the size expected by the model
         transforms.Resize((224, 224)),
@@ -25,23 +30,22 @@ def _prepare():
         # Add normalization if required by your model
         transforms.Normalize(mean=[0.5] * 3, std=[0.5] * 3)
     ])
-
     # Dataset prepare
-    train_dataset = FairDataset(
-        txt_path=IMAGES_LIST_TXT,
+    test_dataset = FairDataset(
+        txt_path=images_list_txt,
         transformation_function=transform,
         with_predicted=False
     )
-    train_loader = DataLoader(
-        train_dataset,
-        batch_size=BATCH_SIZE,
+    test_loader = DataLoader(
+        test_dataset,
+        batch_size=batch_size,
         shuffle=True,
         drop_last=False,
         num_workers=8
     )
-    return model, train_loader
+    return test_loader
 
-def evaluate_model(model, train_loader):
+def evaluate_model(model, test_loader, suppres_printing=False):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     model.eval()
@@ -50,7 +54,7 @@ def evaluate_model(model, train_loader):
     all_sensitive_features = []
 
     with torch.no_grad():
-        for i, data in enumerate(train_loader):
+        for i, data in enumerate(test_loader):
             inputs, labels, race = data
             inputs = inputs.to(device)
             outputs = model(inputs)
@@ -70,16 +74,17 @@ def evaluate_model(model, train_loader):
         groups=all_sensitive_features
     )
 
-    # Compute confusion matrices per group
-    confusion_matrices = data_frame.confusion_matrix_per_group()
-
+    acc = (data_frame.tp()+data_frame.tn())/(data_frame.tp()+data_frame.tn()+data_frame.fn()+data_frame.fp())
+    if suppres_printing:
+        return acc, data_frame
+    print("Overall Accuracy:")
+    print(acc)
     print("Confusion Matrices per Group for training:")
+    confusion_matrices = data_frame.confusion_matrix_per_group()
     print(confusion_matrices)
     print()
 
-    print("Overall Accuracy:")
-    acc = (data_frame.tp()+data_frame.tn())/(data_frame.tp()+data_frame.tn()+data_frame.fn()+data_frame.fp())
-    print(acc)
+
 
     tpr_parity, fpr_parity = equality_of_odds_parity(data=data_frame, one=False)
     print("True Positive Parity:")
@@ -93,8 +98,10 @@ def evaluate_model(model, train_loader):
     display_parities(ppv_parity, text="")
     print("Negative Predictive Value:")
     display_parities(npv_parity, text="")
+    return acc, data_frame
 
 
 if __name__ == "__main__":
-    model, train_loader = _prepare()
-    evaluate_model(model, train_loader)
+    model = _prepare_model()
+    test_loader = _prepare_dataset()
+    evaluate_model(model, test_loader)

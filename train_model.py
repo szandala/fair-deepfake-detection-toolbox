@@ -6,19 +6,17 @@ from torch.utils.data import DataLoader
 from common import FairDataset, DataFrame
 from fairness_metrics import equality_of_odds_parity, predictive_value_parity
 from icecream import ic
-from evaluate_fairness import evaluate_model
+from evaluate_fairness import evaluate_model, _prepare_dataset
 
 from my_models import tip_learning, vit
 
 
 # MODEL_PATH = "deepfake_c0_xception.pkl"
-N_EPOCHS = 10
+N_EPOCHS = 15
 BATCH_SIZE = 128
 IMAGES_LIST_TXT= "work_on_train.txt"
 
 model = vit()
-model.train()
-model = tip_learning(model)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = model.to(device)
 
@@ -54,10 +52,12 @@ optimizer = optim.Adam(
 )
 scheduler = lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.5)
 
-
+test_dataset = _prepare_dataset("work_on_test.txt")
 
 for epoch in range(N_EPOCHS):
     running_loss = 0.0
+    model.train() # in case I change in eval into model.eval()
+    model = tip_learning(model)
     for i, data in enumerate(train_loader):
         inputs, labels, _ = data
         inputs, labels = inputs.to(device), labels.to(device)
@@ -80,8 +80,7 @@ for epoch in range(N_EPOCHS):
             running_loss = 0.0
 
     scheduler.step()
-    torch.save(model.state_dict(), f"model_epoch_{epoch + 1}.pth")
+    acc , _ = evaluate_model(model, test_loader)
+    torch.save(model.state_dict(), f"model_tip_train_e{epoch + 1}_acc{acc:.3f}.pth")
 
 print("Finished Training")
-
-evaluate_model(model, train_loader)
