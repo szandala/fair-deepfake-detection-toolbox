@@ -14,7 +14,7 @@ from my_models import tip_learning, vit
 # MODEL_PATH = "deepfake_c0_xception.pkl"
 N_EPOCHS = 15
 BATCH_SIZE = 128
-IMAGES_LIST_TXT= "work_on_train.txt"
+IMAGES_LIST_TXT= "work_on_undersampl_train.txt"
 
 model = vit()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -60,6 +60,6 @@ for epoch in range(N_EPOCHS):
 
     scheduler.step()
     acc, _ = evaluate_model(model, test_dataset_loader, suppres_printing=True)
-    torch.save(model.state_dict(), f"model_full_train_e{epoch + 1}_acc{acc:.3f}.pth")
+    torch.save(model.state_dict(), f"model_full_undersampl_train_e{epoch + 1}_acc{acc:.3f}.pth")
 
 print("Finished Training")
