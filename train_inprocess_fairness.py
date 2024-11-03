@@ -11,56 +11,15 @@ from evaluate_fairness import evaluate_model
 from my_models import tip_learning, vit
 
 
-MODEL_PATH = "model_epoch_2.pth"
-N_EPOCHS = 2
+# MODEL_PATH = "model_epoch_2.pth"
+N_EPOCHS = 15
 BATCH_SIZE = 128
-IMAGES_LIST_TXT= "work_on_validate.txt"
+IMAGES_LIST_TXT = "work_on_train.txt"
 
 model = vit()
-model.load_state_dict(torch.load(MODEL_PATH))
-model.train()
-model = tip_learning(model)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = model.to(device)
 
-
-
-# def compute_fairness_loss(labels, preds, sensitive_attrs):
-#     unique_groups = torch.unique(sensitive_attrs)
-#     tpr_values = []
-#     fpr_values = []
-
-#     for group in unique_groups:
-#         group_mask = (sensitive_attrs == group)
-#         group_labels = labels[group_mask]
-#         group_preds = preds[group_mask]
-
-#         TP = ((group_labels == 1) & (group_preds == 1)).sum()
-#         FP = ((group_labels == 0) & (group_preds == 1)).sum()
-#         TN = ((group_labels == 0) & (group_preds == 0)).sum()
-#         FN = ((group_labels == 1) & (group_preds == 0)).sum()
-
-#         if (TP + FN) > 0:
-#             TPR = TP.float() / (TP + FN).float()
-#         else:
-#             TPR = torch.tensor(0.0, device=TP.device)
-
-#         if (FP + TN) > 0:
-#             FPR = FP.float() / (FP + TN).float()
-#         else:
-#             FPR = torch.tensor(0.0, device=FP.device)
-
-#         tpr_values.append(TPR)
-#         fpr_values.append(FPR)
-
-#     tpr_values = torch.stack(tpr_values)
-#     fpr_values = torch.stack(fpr_values)
-
-#     tpr_var = torch.var(tpr_values, unbiased=False)
-#     fpr_var = torch.var(fpr_values, unbiased=False)
-
-#     fairness_loss = tpr_var + fpr_var
-#     return fairness_loss
 
 def compute_fairness_loss(labels, preds, sensitive_features):
     labels_np = labels.cpu().numpy()
@@ -71,55 +30,33 @@ def compute_fairness_loss(labels, preds, sensitive_features):
         expected=labels_np,
         predicted=preds_np,
         sensitive_features=sensitive_features,
-        one=True
+        one=True,
     )
-
-    # Fairness loss is the deviation from perfect parity (which is 1)
-    fairness_loss = (1 - tpr_parity) ** 2
-    # TODO: this might be risky as FPR should go to 0.0,
+    # FPR should go to 0.0,
     # so overall, in perfect world, it would be 0/0 to get min/max
-    # + (1 - fpr_parity) ** 2
+    # this "trick" solves this concern.
+    fpr_parity = 1 if fpr_parity == 0 else fpr_parity
+
+    # Fairness loss is the std deviation from perfect parity (which is 1)
+    fairness_loss = (1 - tpr_parity) ** 2 + (1 - fpr_parity) ** 2
     fairness_loss = torch.tensor(fairness_loss, device=labels.device, dtype=torch.float)
 
     return fairness_loss
 
 
-
-transform = transforms.Compose([
-    # Resize images to the size expected by the model
-    transforms.Resize((224, 224)),
-    transforms.ToTensor(),
-    # Add normalization if required by your model
-    transforms.Normalize(mean=[0.5] * 3, std=[0.5] * 3)
-])
-
-# Dataset prepare
-train_dataset = FairDataset(
-    txt_path=IMAGES_LIST_TXT,
-    transformation_function=transform,
-    with_predicted=False
-)
-train_loader = DataLoader(
-    train_dataset,
-    batch_size=BATCH_SIZE,
-    shuffle=True,
-    drop_last=False,
-    num_workers=8
-)
+train_loader = _prepare_dataset_loader(IMAGES_LIST_TXT)
+test_dataset_loader = _prepare_dataset_loader("work_on_test.txt")
 
 # Train parameters prepare
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(
-    model.parameters(),
-    lr=0.001,
-    betas=(0.9, 0.999),
-    eps=1e-08
-)
+optimizer = optim.Adam(model.parameters(), lr=0.001, betas=(0.9, 0.999), eps=1e-08)
 scheduler = lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.5)
 
 
 for epoch in range(N_EPOCHS):
     running_loss = 0.0
+    model.train()  # in case I change in eval into model.eval()
+    # model = tip_learning(model)
     for i, data in enumerate(train_loader):
         inputs, labels, race = data
         inputs, labels = inputs.to(device), labels.to(device)
@@ -140,13 +77,19 @@ for epoch in range(N_EPOCHS):
 
         running_loss += total_loss.item()
         if i % 20 == 0:
-            print("[Epoch %d, Batch %5d] loss: %.3f" %
-                  (epoch + 1, i + 1, running_loss / 100))
+            print(
+                "[Epoch %d, Batch %5d] loss: %.3f"
+                % (epoch + 1, i + 1, running_loss / 100)
+            )
             running_loss = 0.0
 
     scheduler.step()
-    torch.save(model.state_dict(), f"model_epoch_{epoch + 1}-inprocessed.pth")
+    acc, _ = evaluate_model(model, test_dataset_loader, suppres_printing=True)
+    torch.save(
+        model.state_dict(),
+        f"model_full_inprocess_tfpr_train_e{epoch + 1}_acc{acc:.3f}.pth",
+    )
 
 print("Finished Training")
 
-evaluate_model(model, train_loader)
+# evaluate_model(model, train_loader)
