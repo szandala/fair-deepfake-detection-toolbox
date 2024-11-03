@@ -101,7 +101,8 @@ def evaluate_model(model, test_loader, suppres_printing=False):
 
 
 if __name__ == "__main__":
-    model_path = sys.argv[0]
+    model_path = sys.argv[1]
+    ic(model_path)
     model = _load_model(model_path)
     test_loader = _prepare_dataset()
     evaluate_model(model, test_loader)
