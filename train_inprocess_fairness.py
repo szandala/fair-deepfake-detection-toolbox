@@ -3,10 +3,9 @@ from torch import nn, optim
 from torch.optim import lr_scheduler
 from torchvision import transforms
 from torch.utils.data import DataLoader
-from common import FairDataset, DataFrame
 from fairness_metrics import equality_of_odds_parity, predictive_value_parity
 from icecream import ic
-from evaluate_fairness import evaluate_model
+from evaluate_fairness import evaluate_model, _prepare_dataset_loader
 
 from my_models import tip_learning, vit
 
