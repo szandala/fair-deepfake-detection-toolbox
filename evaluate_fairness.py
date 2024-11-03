@@ -85,14 +85,14 @@ def evaluate_model(model, test_loader, suppres_printing=False):
 
 
 
-    tpr_parity, fpr_parity = equality_of_odds_parity(data=data_frame, one=False)
+    tpr_parity, fpr_parity = equality_of_odds_parity(data=data_frame, one=True)
     print("True Positive Parity:")
     display_parities(tpr_parity, text="")
     print("False Positive Parity:")
     display_parities(fpr_parity, text="")
     print()
 
-    ppv_parity, npv_parity = predictive_value_parity(data=data_frame, one=False)
+    ppv_parity, npv_parity = predictive_value_parity(data=data_frame, one=True)
     print("Positive Predictive Value:")
     display_parities(ppv_parity, text="")
     print("Negative Predictive Value:")
