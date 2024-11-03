@@ -4,7 +4,7 @@ from torch.utils.data import DataLoader
 from common import FairDataset, DataFrame, display_parities
 from fairness_metrics import equality_of_odds_parity, predictive_value_parity
 from icecream import ic
-
+import sys
 
 from my_models import vit
 
@@ -101,6 +101,7 @@ def evaluate_model(model, test_loader, suppres_printing=False):
 
 
 if __name__ == "__main__":
-    model = _prepare_model()
+    model_path = sys.argv[1:]
+    model = _prepare_model(model_path[0])
     test_loader = _prepare_dataset()
     evaluate_model(model, test_loader)
