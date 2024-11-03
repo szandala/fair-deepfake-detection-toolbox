@@ -104,5 +104,5 @@ if __name__ == "__main__":
     model_path = sys.argv[1]
     ic(model_path)
     model = _load_model(model_path)
-    test_loader = _prepare_dataset()
+    test_loader = _prepare_dataset_loader()
     evaluate_model(model, test_loader)
