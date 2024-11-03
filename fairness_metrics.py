@@ -1,4 +1,4 @@
-from common import DataFrame, _compute_parity
+from common import DataFrame, _compute_global_parity
 
 
 def equality_of_odds_parity(expected=None, predicted=None, sensitive_features=None, data=None, one=True):
@@ -28,12 +28,12 @@ def equality_of_odds_parity(expected=None, predicted=None, sensitive_features=No
             else 0
         )
         fpr_dict[group] = fpr
+    if one:
+        tpr_parity = _compute_global_parity(tpr_dict)
+        fpr_parity = _compute_global_parity(fpr_dict)
 
-    tpr_parity = _compute_parity(tpr_dict, one=one)
-    fpr_parity = _compute_parity(fpr_dict, one=one)
-
-    return tpr_parity, fpr_parity
-
+        return tpr_parity, fpr_parity
+    return tpr_dict, fpr_dict
 
 def predictive_value_parity(expected=None, predicted=None, sensitive_features=None, data=None, one=True):
     """
@@ -65,7 +65,10 @@ def predictive_value_parity(expected=None, predicted=None, sensitive_features=No
         )
         npv_dict[group] = npv
 
-    ppv_parity = _compute_parity(ppv_dict, one=one)
-    npv_parity = _compute_parity(npv_dict, one=one)
+    if one:
+        ppv_parity = _compute_global_parity(ppv_dict)
+        npv_parity = _compute_global_parity(npv_dict)
 
-    return ppv_parity, npv_parity
+        return ppv_parity, npv_parity
+
+    return ppv_dict, npv_dict

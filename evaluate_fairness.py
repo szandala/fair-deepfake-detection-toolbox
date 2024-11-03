@@ -89,7 +89,7 @@ def evaluate_model(model, test_loader, suppres_printing=False):
     print("True Positive Parity:")
     display_parities(tpr_parity, text="")
     print("False Positive Parity:")
-    display_parities(tpr_parity, text="")
+    display_parities(fpr_parity, text="")
     print()
 
     ppv_parity, npv_parity = predictive_value_parity(data=data_frame, one=False)

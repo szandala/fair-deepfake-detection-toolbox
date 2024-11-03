@@ -109,22 +109,22 @@ class DataFrame:
         return pd.DataFrame(data)
 
 
-def _compute_parity(parity_dict, one):
-    if one:
-        max_parity = max(parity_dict.values())
-        min_parity = min(parity_dict.values())
-        if max_parity != 0:
-            parity_ratio = min_parity / max_parity
-        else:
-            parity_ratio = 0
-        return parity_ratio
+def _compute_global_parity(parity_dict):
+    # if one:
+    max_parity = max(parity_dict.values())
+    min_parity = min(parity_dict.values())
+    if max_parity != 0:
+        parity_ratio = min_parity / max_parity
+    else:
+        parity_ratio = 0
+    return parity_ratio
 
-    parity_ratios = {}
-    groups = list(parity_dict.keys())
-    for group in groups:
-        parity = parity_dict[group]
-        parity_ratios[group] = parity
-    return parity_ratios
+    # parity_ratios = {}
+    # groups = list(parity_dict.keys())
+    # for group in groups:
+    #     parity = parity_dict[group]
+    #     parity_ratios[group] = parity
+    # return parity_ratios
 
 
 def display_parities(parities, text="INSERT `text`"):
