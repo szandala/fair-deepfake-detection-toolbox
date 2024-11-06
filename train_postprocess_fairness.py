@@ -45,27 +45,42 @@ races = np.array(races)
 
 # Step 2: Find the optimal global threshold
 def find_optimal_threshold(y_true, y_scores, races):
-    thresholds = np.linspace(0, 1, 100)
-    min_tpr_diff = float('inf')
+    thresholds = np.linspace(0, 1, 10000)
+    min_total_diff = float('inf')
     optimal_threshold = 0.5  # Default threshold
 
     for threshold in thresholds:
         tprs = []
+        fprs = []
         for race in np.unique(races):
             idx = races == race
             y_true_race = y_true[idx]
             y_pred_race = (y_scores[idx] >= threshold).astype(int)
+
             tp = np.sum((y_pred_race == 1) & (y_true_race == 1))
             fn = np.sum((y_pred_race == 0) & (y_true_race == 1))
-            tpr = tp / (tp + fn + 1e-8)  # Add epsilon to avoid division by zero
+            fp = np.sum((y_pred_race == 1) & (y_true_race == 0))
+            tn = np.sum((y_pred_race == 0) & (y_true_race == 0))
+
+            tpr = tp / (tp + fn + 1e-8)  # True Positive Rate
+            fpr = fp / (fp + tn + 1e-8)  # False Positive Rate
+
             tprs.append(tpr)
+            fprs.append(fpr)
+
+        # Calculate the differences
         tpr_diff = max(tprs) - min(tprs)
-        if tpr_diff < min_tpr_diff:
-            min_tpr_diff = tpr_diff
+        fpr_diff = max(fprs) - min(fprs)
+
+        # Combine TPR and FPR differences
+        total_diff = tpr_diff + fpr_diff  # You can adjust this combination as needed
+
+        if total_diff < min_total_diff:
+            min_total_diff = total_diff
             optimal_threshold = threshold
 
     print(f"Optimal threshold: {optimal_threshold:.4f}")
-    print(f"Minimum TPR difference between races: {min_tpr_diff:.4f}")
+    print(f"Minimum total difference (TPR diff + FPR diff) between races: {min_total_diff:.4f}")
     return optimal_threshold
 
 optimal_threshold = find_optimal_threshold(y_true, y_scores, races)
