@@ -46,7 +46,7 @@ races = np.array(races)
 # Step 2: Find the optimal global threshold
 def find_optimal_threshold(y_true, y_scores, races):
     thresholds = np.linspace(0, 1, 10000)
-    min_total_diff = float('inf')
+    min_total_ratio = float('inf')
     optimal_threshold = 0.5  # Default threshold
 
     for threshold in thresholds:
@@ -68,15 +68,15 @@ def find_optimal_threshold(y_true, y_scores, races):
             tprs.append(tpr)
             fprs.append(fpr)
 
-        # Calculate the differences
-        tpr_diff = max(tprs) - min(tprs)
-        fpr_diff = max(fprs) - min(fprs)
+        # Calculate the ratios
+        tpr_ratio = min(tprs)/max(tprs)
+        fpr_ratio = min(fprs)/max(fprs)
 
-        # Combine TPR and FPR differences
-        total_diff = tpr_diff + fpr_diff  # You can adjust this combination as needed
-
-        if total_diff < min_total_diff:
-            min_total_diff = total_diff
+        # Combine TPR and FPR ratios
+        total_ratio = tpr_ratio + fpr_ratio  # You can adjust this combination as needed
+        # ic(total_ratio)
+        if total_ratio < min_total_ratio:
+            min_total_ratio = total_ratio
             optimal_threshold = threshold
 
     print(f"Optimal threshold: {optimal_threshold:.4f}")
