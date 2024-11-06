@@ -52,6 +52,8 @@ def find_optimal_threshold(y_true, y_scores, races):
     for threshold in thresholds:
         tprs = []
         fprs = []
+        ppvs = []
+        npvs = []
         for race in np.unique(races):
             idx = races == race
             y_true_race = y_true[idx]
@@ -62,19 +64,24 @@ def find_optimal_threshold(y_true, y_scores, races):
             fp = np.sum((y_pred_race == 1) & (y_true_race == 0))
             tn = np.sum((y_pred_race == 0) & (y_true_race == 0))
 
-            # tpr = tp / (tp + fn) if (tp + fn) != 0 else 1  # True Positive Rate
-            # fpr = fp / (fp + tn) if (fp + tn) != 0 else 1  # False Positive Rate
+            tpr = tp / (tp + fn) if (tp + fn) != 0 else 1  # True Positive Rate
+            fpr = fp / (fp + tn) if (fp + tn) != 0 else 1  # False Positive Rate
+            tprs.append(tpr)
+            fprs.append(fpr)
             ppv = tp/(tp+fp)
             npv = tn/(tn+fn)
-            tprs.append(ppv)
-            fprs.append(npv)
+            ppvs.append(ppv)
+            npvs.append(npv)
+
 
         # Calculate the ratios
         tpr_ratio = min(tprs)/max(tprs)
         fpr_ratio = min(fprs)/max(fprs)
+        ppv_ratio = min(ppvs)/max(ppvs)
+        npv_ratio = min(npvs)/max(npvs)
 
-        # Combine TPR and FPR ratios
-        total_ratio = tpr_ratio + fpr_ratio  # You can adjust this combination as needed
+        # Combine ratios
+        total_ratio = tpr_ratio **2 * fpr_ratio **2 * ppv_ratio **2 * npv_ratio**2
         # ic(total_ratio)
         if total_ratio > max_total_ratio:
             max_total_ratio = total_ratio
