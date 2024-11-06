@@ -80,7 +80,7 @@ def find_optimal_threshold(y_true, y_scores, races):
             optimal_threshold = threshold
 
     print(f"Optimal threshold: {optimal_threshold:.4f}")
-    print(f"Minimum total difference (TPR diff + FPR diff) between races: {min_total_diff:.4f}")
+    print(f"Minimum total difference (TPR diff + FPR diff) between races: {min_total_ratio:.4f}")
     return optimal_threshold
 
 optimal_threshold = find_optimal_threshold(y_true, y_scores, races)
