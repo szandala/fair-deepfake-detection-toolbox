@@ -9,12 +9,13 @@ from evaluate_fairness import evaluate_model, _prepare_dataset_loader, _load_mod
 from my_models import vit
 
 # Hyperparameters
+MODEL_PATH="model_full_undersampl_train_e14_acc0.756.pth"
 N_EPOCHS = 15
 BATCH_SIZE = 128
 IMAGES_LIST_TXT = "work_on_train.txt"
 
 # Initialize the model
-model = _load_model(model_path="model_full_undersampl_train_e14_acc0.756.pth")
+model = _load_model(model_path=MODEL_PATH)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = model.to(device)
 
@@ -93,7 +94,43 @@ def find_optimal_threshold(y_true, y_scores, races):
 
 optimal_threshold = find_optimal_threshold(y_true, y_scores, races)
 
-# Step 3: Evaluate the model with the new threshold
+
+# Step 3: Adjust the model's bias term to bake the threshold into the model
+
+# Calculate the bias adjustment
+delta_b = -np.log((1 - optimal_threshold) / optimal_threshold)
+
+print(f"Bias adjustment (delta_b): {delta_b:.4f}")
+
+# Adjust the model's bias term
+# Assuming the last layer is a Linear layer named 'classifier' (common in models like ViT)
+
+# Access the last Linear layer
+last_linear = model.classifier
+
+# Check if the last layer is indeed Linear
+if not isinstance(last_linear, nn.Linear):
+    raise TypeError("The last layer is not a Linear layer. Please adjust the code accordingly.")
+
+# Adjust the bias term
+with torch.no_grad():
+    # Get the weights and biases
+    weights = last_linear.weight  # Shape: [num_classes, in_features]
+    biases = last_linear.bias     # Shape: [num_classes]
+
+    # Adjust the biases
+    # For binary classification, adjust the biases of both classes accordingly
+    # Adjust the bias of class 1 (index 1)
+    biases_adjusted = biases.clone()
+    biases_adjusted[1] += delta_b
+    # Update the bias
+    last_linear.bias.copy_(biases_adjusted)
+
+print("Bias term adjusted to bake in the optimal threshold.")
+
+
+
+# Step 4: Evaluate the model with the new threshold
 def evaluate_with_threshold(y_true, y_scores, races, threshold):
     y_pred = (y_scores >= threshold).astype(int)
     accuracy = np.mean(y_pred == y_true)
@@ -113,6 +150,7 @@ def evaluate_with_threshold(y_true, y_scores, races, threshold):
         ppv = tp /(tp+fp)
         npv = tn/(tn+fn)
         print(f"Race: {race}, TPR: {tpr:.4f}, FPR: {fpr:.4f}, PPV: {ppv:.4f}, NPV: {npv:.4f}")
+    return accuracy
 
 # Evaluate with the default threshold (0.5)
 print("\nEvaluation with default threshold (0.5):")
@@ -120,7 +158,7 @@ evaluate_with_threshold(y_true, y_scores, races, threshold=0.5)
 
 # Evaluate with the optimal threshold
 print(f"\nEvaluation with optimal threshold ({optimal_threshold:.4f}):")
-evaluate_with_threshold(y_true, y_scores, races, threshold=optimal_threshold)
+acc = evaluate_with_threshold(y_true, y_scores, races, threshold=optimal_threshold)
 
 # During inference, use the optimal threshold
 def predict(inputs):
@@ -131,9 +169,6 @@ def predict(inputs):
         probs = torch.softmax(logits, dim=1)[:, 1]
         preds = (probs >= optimal_threshold).int()
     return preds
-
+new_model_path = f"{MODEL_PATH.replace(".pth", f"_thrt")}_acc{acc:.4f}.pth"
 # Save the model and the optimal threshold
-torch.save({
-    'model_state_dict': model.state_dict(),
-    'optimal_threshold': optimal_threshold,
-}, 'model_with_optimal_threshold.pth')
+torch.save(model.state_dict(), new_model_path)
