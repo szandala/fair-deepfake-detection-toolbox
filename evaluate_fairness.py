@@ -100,9 +100,65 @@ def evaluate_model(model, test_loader, suppres_printing=False):
     return acc, data_frame
 
 
+
+def evaluate_model_logits(model, test_loader):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    model.eval()
+    all_logits = []
+    all_expected = []
+
+    with torch.no_grad():
+        for i, data in enumerate(test_loader):
+            inputs, labels, _ = data  # Assuming 'race' is not needed here
+            inputs = inputs.to(device)
+            labels = labels.to(device)
+
+            # Forward pass
+            outputs = model(inputs)
+            logits = outputs.logits  # Extract the logits tensor
+
+            # Move logits and labels to CPU and convert to numpy arrays
+            logits = logits.cpu().numpy()
+            labels = labels.cpu().numpy()
+
+            # For each sample in the batch, collect the logits and labels
+            for logit, label in zip(logits, labels):
+                all_logits.append(logit)
+                all_expected.append(label)
+
+            if i % 10 == 0:
+                print(f"Processed {i * test_loader.batch_size} images")
+
+    # Return the list of tuples (logits, expected_label)
+    return list(zip(all_logits, all_expected))
+
+def draw_histogram(results):
+    import matplotlib.pyplot as plt
+
+    # Separate logit differences and expected labels
+    logit_diffs, expected_labels = zip(*results)
+
+    # Convert to NumPy arrays
+    logit_diffs = np.array(logit_diffs)
+    expected_labels = np.array(expected_labels)
+
+    # Plot histograms for each class
+    plt.hist(logit_diffs[expected_labels == 0], bins=50, alpha=0.5, label='Class 0')
+    plt.hist(logit_diffs[expected_labels == 1], bins=50, alpha=0.5, label='Class 1')
+    plt.xlabel('Logit Difference')
+    plt.ylabel('Frequency')
+    plt.title('Histogram of Logit Differences by Class')
+    plt.legend()
+    plt.savefig('logit_differences_histogram.png', dpi=300)
+
+
+
 if __name__ == "__main__":
     model_path = sys.argv[1]
     ic(model_path)
     model = _load_model(model_path)
     test_loader = _prepare_dataset_loader()
-    evaluate_model(model, test_loader)
+    # evaluate_model(model, test_loader)
+    results = evaluate_model_logits(model, test_loader)
+    draw_histogram(results)
