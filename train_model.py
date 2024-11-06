@@ -8,7 +8,7 @@ from fairness_metrics import equality_of_odds_parity, predictive_value_parity
 from icecream import ic
 from evaluate_fairness import evaluate_model, _prepare_dataset_loader
 
-from my_models import tip_learning, vit
+from my_models import tip_learning, vit, efficientnet_b4
 
 
 # MODEL_PATH = "deepfake_c0_xception.pkl"
@@ -16,7 +16,7 @@ N_EPOCHS = 15
 BATCH_SIZE = 128
 IMAGES_LIST_TXT= "work_on_undersampl_train.txt"
 
-model = vit()
+model = efficientnet_b4()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = model.to(device)
 
@@ -60,6 +60,6 @@ for epoch in range(N_EPOCHS):
 
     scheduler.step()
     acc, _ = evaluate_model(model, test_dataset_loader, suppres_printing=True)
-    torch.save(model.state_dict(), f"model_full_undersampl_train_e{epoch + 1}_acc{acc:.3f}.pth")
+    torch.save(model.state_dict(), f"model_eff_full_undersampl_train_e{epoch + 1}_acc{acc:.3f}.pth")
 
 print("Finished Training")
