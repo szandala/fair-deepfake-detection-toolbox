@@ -9,7 +9,7 @@ from evaluate_fairness import evaluate_model, _prepare_dataset_loader, _load_mod
 from my_models import vit
 
 # Hyperparameters
-MODEL_PATH="model_full_undersampl_train_e14_acc0.756.pth"
+MODEL_PATH="model_full_train_e12_acc0.887.pth"
 N_EPOCHS = 15
 BATCH_SIZE = 128
 IMAGES_LIST_TXT = "work_on_train.txt"
@@ -83,7 +83,7 @@ def find_optimal_threshold(y_true, y_scores, races):
 
         # Combine ratios
         total_ratio = tpr_ratio **2 * fpr_ratio **2 * ppv_ratio **2 * npv_ratio**2
-        # ic(total_ratio)
+
         if total_ratio > max_total_ratio:
             max_total_ratio = total_ratio
             optimal_threshold = threshold
