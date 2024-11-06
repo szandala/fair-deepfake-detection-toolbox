@@ -169,6 +169,6 @@ def predict(inputs):
         probs = torch.softmax(logits, dim=1)[:, 1]
         preds = (probs >= optimal_threshold).int()
     return preds
-new_model_path = f"{MODEL_PATH.replace(".pth", f"_thrt")}_acc{acc:.4f}.pth"
+new_model_path = f"{MODEL_PATH.replace('.pth', f'_thrt')}_acc{acc:.4f}.pth"
 # Save the model and the optimal threshold
 torch.save(model.state_dict(), new_model_path)
