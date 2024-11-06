@@ -25,3 +25,10 @@ def efficientnet_b4():
     model.classifier[1] = nn.Linear(num_features, 2)
 
     return model
+
+def resnet152():
+    model = models.resnet152(pretrained=True)
+
+    # Modify the fully connected layer to output 2 classes
+    num_features = model.fc.in_features
+    model.fc = nn.Linear(num_features, 2)
