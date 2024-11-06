@@ -135,6 +135,7 @@ def evaluate_model_logits(model, test_loader):
 
 def draw_histogram(results):
     import matplotlib.pyplot as plt
+    import numpy as np
 
     # Separate logit differences and expected labels
     logit_diffs, expected_labels = zip(*results)
