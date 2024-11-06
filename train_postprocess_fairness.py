@@ -64,8 +64,8 @@ def find_optimal_threshold(y_true, y_scores, races):
             fp = np.sum((y_pred_race == 1) & (y_true_race == 0))
             tn = np.sum((y_pred_race == 0) & (y_true_race == 0))
 
-            tpr = tp / (tp + fn) if (tp + fn) != 0 else 1  # True Positive Rate
-            fpr = fp / (fp + tn) if (fp + tn) != 0 else 1  # False Positive Rate
+            tpr = tp / (tp + fn)   # True Positive Rate
+            fpr = fp / (fp + tn)   # False Positive Rate
             tprs.append(tpr)
             fprs.append(fpr)
             ppv = tp/(tp+fp)
@@ -76,7 +76,7 @@ def find_optimal_threshold(y_true, y_scores, races):
 
         # Calculate the ratios
         tpr_ratio = min(tprs)/max(tprs)
-        fpr_ratio = min(fprs)/max(fprs)
+        fpr_ratio = (min(fprs)/max(fprs)) * (1 - max(fprs)) # FPRs aim to 0, so adding extra penalty
         ppv_ratio = min(ppvs)/max(ppvs)
         npv_ratio = min(npvs)/max(npvs)
 
