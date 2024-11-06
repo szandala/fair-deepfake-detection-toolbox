@@ -81,7 +81,7 @@ def find_optimal_threshold(y_true, y_scores, races):
             optimal_threshold = threshold
 
     print(f"Optimal threshold: {optimal_threshold:.4f}")
-    print(f"Minimum total difference (TPR diff + FPR diff) between races: {max_total_ratio:.4f}")
+    # print(f"Minimum total difference (TPR diff + FPR diff) between races: {max_total_ratio:.4f}")
     return optimal_threshold
 
 optimal_threshold = find_optimal_threshold(y_true, y_scores, races)
@@ -101,9 +101,11 @@ def evaluate_with_threshold(y_true, y_scores, races, threshold):
         fn = np.sum((y_pred_race == 0) & (y_true_race == 1))
         fp = np.sum((y_pred_race == 1) & (y_true_race == 0))
         tn = np.sum((y_pred_race == 0) & (y_true_race == 0))
-        tpr = tp / (tp + fn + 1e-8)
-        fpr = fp / (fp + tn + 1e-8)
-        print(f"Race: {race}, TPR: {tpr:.4f}, FPR: {fpr:.4f}")
+        tpr = tp / (tp + fn)
+        fpr = fp / (fp + tn)
+        ppv = tp /(tp+fp)
+        npv = tn/(tn+fn)
+        print(f"Race: {race}, TPR: {tpr:.4f}, FPR: {fpr:.4f}, PPV: {ppv:.4f}, NPV: {npv:.4f}")
 
 # Evaluate with the default threshold (0.5)
 print("\nEvaluation with default threshold (0.5):")
