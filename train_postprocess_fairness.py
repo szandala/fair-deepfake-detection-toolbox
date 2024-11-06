@@ -5,7 +5,7 @@ from torchvision import transforms
 from torch.utils.data import DataLoader
 import numpy as np
 
-from evaluate_fairness import evaluate_model, _prepare_dataset_loader
+from evaluate_fairness import evaluate_model, _prepare_dataset_loader, _load_model
 from my_models import vit
 
 # Hyperparameters
@@ -14,7 +14,7 @@ BATCH_SIZE = 128
 IMAGES_LIST_TXT = "work_on_train.txt"
 
 # Initialize the model
-model = vit()
+model = _load_model(model_path="model_full_train_e12_acc0.887.pth")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = model.to(device)
 
@@ -28,40 +28,40 @@ optimizer = optim.Adam(model.parameters(), lr=0.001)
 scheduler = lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.5)
 
 # Training loop (without fairness loss)
-for epoch in range(N_EPOCHS):
-    running_loss = 0.0
-    model.train()
-    for i, data in enumerate(train_loader):
-        inputs, labels, race = data
-        inputs, labels = inputs.to(device), labels.to(device)
+# for epoch in range(N_EPOCHS):
+#     running_loss = 0.0
+#     model.train()
+#     for i, data in enumerate(train_loader):
+#         inputs, labels, race = data
+#         inputs, labels = inputs.to(device), labels.to(device)
 
-        optimizer.zero_grad()
+#         optimizer.zero_grad()
 
-        # Forward pass
-        outputs = model(inputs)
-        logits = outputs.logits  # Assuming the model outputs logits
-        loss = criterion(logits, labels)
+#         # Forward pass
+#         outputs = model(inputs)
+#         logits = outputs.logits  # Assuming the model outputs logits
+#         loss = criterion(logits, labels)
 
-        # Backward pass
-        loss.backward()
-        optimizer.step()
+#         # Backward pass
+#         loss.backward()
+#         optimizer.step()
 
-        running_loss += loss.item()
-        if i % 20 == 0:
-            print(
-                "[Epoch %d, Batch %5d] loss: %.3f"
-                % (epoch + 1, i + 1, running_loss / 100)
-            )
-            running_loss = 0.0
+#         running_loss += loss.item()
+#         if i % 20 == 0:
+#             print(
+#                 "[Epoch %d, Batch %5d] loss: %.3f"
+#                 % (epoch + 1, i + 1, running_loss / 100)
+#             )
+#             running_loss = 0.0
 
-    scheduler.step()
-    acc, _ = evaluate_model(model, test_dataset_loader, suppress_printing=True)
-    torch.save(
-        model.state_dict(),
-        f"model_global_threshold_e{epoch + 1}_acc{acc:.3f}.pth",
-    )
+#     scheduler.step()
+#     acc, _ = evaluate_model(model, test_dataset_loader, suppress_printing=True)
+#     torch.save(
+#         model.state_dict(),
+#         f"model_global_threshold_e{epoch + 1}_acc{acc:.3f}.pth",
+#     )
 
-print("Finished Training")
+# print("Finished Training")
 
 # After training, adjust the global decision threshold
 # Step 1: Collect predictions and true labels on the fair set (test dataset with race labels)
