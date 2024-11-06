@@ -19,7 +19,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = model.to(device)
 
 # Prepare data loader
-test_dataset_loader = _prepare_dataset_loader("work_on_validate.txt")
+test_dataset_loader = _prepare_dataset_loader("work_on_undersampl_train.txt")
 
 # After training, adjust the global decision threshold
 # Step 1: Collect predictions and true labels on the fair set (test dataset with race labels)
