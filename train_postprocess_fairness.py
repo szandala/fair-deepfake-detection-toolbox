@@ -18,50 +18,8 @@ model = _load_model(model_path="model_full_train_e12_acc0.887.pth")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = model.to(device)
 
-# Prepare data loaders
-train_loader = _prepare_dataset_loader(IMAGES_LIST_TXT)
-test_dataset_loader = _prepare_dataset_loader("work_on_test.txt")
-
-# Training parameters
-criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=0.001)
-scheduler = lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.5)
-
-# Training loop (without fairness loss)
-# for epoch in range(N_EPOCHS):
-#     running_loss = 0.0
-#     model.train()
-#     for i, data in enumerate(train_loader):
-#         inputs, labels, race = data
-#         inputs, labels = inputs.to(device), labels.to(device)
-
-#         optimizer.zero_grad()
-
-#         # Forward pass
-#         outputs = model(inputs)
-#         logits = outputs.logits  # Assuming the model outputs logits
-#         loss = criterion(logits, labels)
-
-#         # Backward pass
-#         loss.backward()
-#         optimizer.step()
-
-#         running_loss += loss.item()
-#         if i % 20 == 0:
-#             print(
-#                 "[Epoch %d, Batch %5d] loss: %.3f"
-#                 % (epoch + 1, i + 1, running_loss / 100)
-#             )
-#             running_loss = 0.0
-
-#     scheduler.step()
-#     acc, _ = evaluate_model(model, test_dataset_loader, suppress_printing=True)
-#     torch.save(
-#         model.state_dict(),
-#         f"model_global_threshold_e{epoch + 1}_acc{acc:.3f}.pth",
-#     )
-
-# print("Finished Training")
+# Prepare data loader
+test_dataset_loader = _prepare_dataset_loader("work_on_validate.txt")
 
 # After training, adjust the global decision threshold
 # Step 1: Collect predictions and true labels on the fair set (test dataset with race labels)
@@ -74,7 +32,8 @@ with torch.no_grad():
     for data in test_dataset_loader:
         inputs, labels, race = data
         inputs = inputs.to(device)
-        logits = model(inputs)
+        outputs = model(inputs)
+        logits = outputs.logits  # Extract the logits tensor
         probs = torch.softmax(logits, dim=1)[:, 1]  # Assuming binary classification (class 1 is 'fake')
         y_true.extend(labels.cpu().numpy())
         y_scores.extend(probs.cpu().numpy())
@@ -142,7 +101,8 @@ evaluate_with_threshold(y_true, y_scores, races, threshold=optimal_threshold)
 def predict(inputs):
     model.eval()
     with torch.no_grad():
-        logits = model(inputs.to(device))
+        outputs = model(inputs.to(device))
+        logits = outputs.logits  # Extract the logits tensor
         probs = torch.softmax(logits, dim=1)[:, 1]
         preds = (probs >= optimal_threshold).int()
     return preds
