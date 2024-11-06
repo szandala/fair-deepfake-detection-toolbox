@@ -32,3 +32,4 @@ def resnet152():
     # Modify the fully connected layer to output 2 classes
     num_features = model.fc.in_features
     model.fc = nn.Linear(num_features, 2)
+    return model
