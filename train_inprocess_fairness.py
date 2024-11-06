@@ -10,7 +10,6 @@ from evaluate_fairness import evaluate_model, _prepare_dataset_loader
 from my_models import tip_learning, vit
 
 
-# MODEL_PATH = "model_epoch_2.pth"
 N_EPOCHS = 15
 BATCH_SIZE = 128
 IMAGES_LIST_TXT = "work_on_train.txt"
