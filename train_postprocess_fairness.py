@@ -14,7 +14,7 @@ BATCH_SIZE = 128
 IMAGES_LIST_TXT = "work_on_train.txt"
 
 # Initialize the model
-model = _load_model(model_path="model_full_train_e12_acc0.887.pth")
+model = _load_model(model_path="model_full_undersampl_train_e14_acc0.756.pth")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = model.to(device)
 
