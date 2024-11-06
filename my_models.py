@@ -26,8 +26,8 @@ def efficientnet_b4():
 
     return model
 
-def resnet152():
-    model = models.resnet152(pretrained=True)
+def resnet101():
+    model = models.resnet101(pretrained=True)
 
     # Modify the fully connected layer to output 2 classes
     num_features = model.fc.in_features

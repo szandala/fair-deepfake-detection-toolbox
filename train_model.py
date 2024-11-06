@@ -8,15 +8,15 @@ from fairness_metrics import equality_of_odds_parity, predictive_value_parity
 from icecream import ic
 from evaluate_fairness import evaluate_model, _prepare_dataset_loader
 
-from my_models import tip_learning, vit, efficientnet_b4, resnet152
+from my_models import tip_learning, vit, efficientnet_b4, resnet101
 
 
 # MODEL_PATH = "deepfake_c0_xception.pkl"
 N_EPOCHS = 15
-BATCH_SIZE = 128
+BATCH_SIZE = 64
 IMAGES_LIST_TXT= "work_on_train.txt"
 
-model = resnet152()
+model = resnet101()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = model.to(device)
 
@@ -60,6 +60,6 @@ for epoch in range(N_EPOCHS):
 
     scheduler.step()
     acc, _ = evaluate_model(model, test_dataset_loader, suppres_printing=True)
-    torch.save(model.state_dict(), f"model_res152_full_train_e{epoch + 1}_acc{acc:.3f}.pth")
+    torch.save(model.state_dict(), f"model_res101_full_train_e{epoch + 1}_acc{acc:.3f}.pth")
 
 print("Finished Training")
