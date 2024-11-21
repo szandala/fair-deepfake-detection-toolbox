@@ -30,13 +30,19 @@ def compute_fairness_loss(labels, preds, sensitive_features):
         sensitive_features=sensitive_features,
         one=True,
     )
+    ppv_parity, npv_parity = predictive_value_parity(
+        expected=labels_np,
+        predicted=preds_np,
+        sensitive_features=sensitive_features,
+        one=True,
+    )
     # FPR should go to 0.0,
     # so overall, in perfect world, it would be 0/0 to get min/max
     # this "trick" solves this concern.
     fpr_parity = 1 if fpr_parity == 0 else fpr_parity
 
     # Fairness loss is the std deviation from perfect parity (which is 1)
-    fairness_loss = (1 - tpr_parity) ** 2 + (1 - fpr_parity) ** 2
+    fairness_loss = (1 - tpr_parity) ** 2 + (1 - fpr_parity) ** 2 + (1- ppv_parity) ** 2 + (1- npv_parity) ** 2
     fairness_loss = torch.tensor(fairness_loss, device=labels.device, dtype=torch.float)
 
     return fairness_loss
@@ -85,7 +91,7 @@ for epoch in range(N_EPOCHS):
     acc, _ = evaluate_model(model, test_dataset_loader, suppres_printing=True)
     torch.save(
         model.state_dict(),
-        f"model_full_inprocess_tfpr_train_e{epoch + 1}_acc{acc:.3f}.pth",
+        f"model_full_inprocess_all_tfpr_train_e{epoch + 1}_acc{acc:.3f}.pth",
     )
 
 print("Finished Training")

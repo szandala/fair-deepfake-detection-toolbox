@@ -117,9 +117,9 @@ def evaluate_model_logits(model, test_loader):
             # Forward pass
             outputs = model(inputs)
             logits = outputs.logits  # Extract the logits tensor
-
+            probs = torch.softmax(logits, dim=1)[:, 1]  # Assuming binary classification (class 1 is 'fake')
             # Move logits and labels to CPU and convert to numpy arrays
-            logits = logits.cpu().numpy()
+            logits = probs.cpu().numpy()
             labels = labels.cpu().numpy()
 
             # For each sample in the batch, collect the logits and labels
@@ -137,16 +137,17 @@ def draw_histogram(results):
     import matplotlib.pyplot as plt
     import numpy as np
 
-    # Separate logit differences and expected labels
     logit_diffs, expected_labels = zip(*results)
 
-    # Convert to NumPy arrays
     logit_diffs = np.array(logit_diffs)
     expected_labels = np.array(expected_labels)
+    # mask = (logit_diffs > 0.01) & (logit_diffs < 0.99)
+    mask = True
+    logit_diffs_m = logit_diffs[mask]
+    expected_labels_m = expected_labels[mask]
 
-    # Plot histograms for each class
-    plt.hist(logit_diffs[expected_labels == 0], bins=50, alpha=0.5, label='Class 0')
-    plt.hist(logit_diffs[expected_labels == 1], bins=50, alpha=0.5, label='Class 1')
+    plt.hist(logit_diffs_m[expected_labels_m == 0], bins=100, color='blue', alpha=1, label='Class 0')
+    plt.hist(logit_diffs_m[expected_labels_m == 1], bins=100, color='red', alpha=1, label='Class 1')
     plt.xlabel('Logit Difference')
     plt.ylabel('Frequency')
     plt.title('Histogram of Logit Differences by Class')
