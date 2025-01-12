@@ -4,6 +4,8 @@ from torch import optim
 from torch.optim import lr_scheduler
 from torch.utils.data import DataLoader
 from torchvision import transforms
+from evaluate_fairness import evaluate_model, _prepare_dataset_loader, _load_model
+from common import FairDataset
 
 import numpy as np
 
@@ -144,9 +146,7 @@ def scale_last_layer_weights(model, std_class0, std_class1, alpha=0.5):
 # 4. Przykładowy SKRYPT główny (z treningiem i użyciem w/w funkcji)
 # --------------------------------------------------------------
 if __name__ == "__main__":
-    from common import FairDataset  # <-- Dostępne w Twoim kodzie
-    from evaluate_fairness import evaluate_model, _prepare_dataset_loader
-    from my_models import tip_learning, vit
+
 
     # 1) Parametry
     MODEL_PATH = "model_full_train_e12_acc0.887.pth"
