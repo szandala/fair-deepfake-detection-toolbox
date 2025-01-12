@@ -145,7 +145,7 @@ def scale_last_layer_weights(model, std_class0, std_class1, alpha=0.5):
 
 
 
-def scale_last_layer_weights_multiply(model, std_class0, std_class1, beta=0.5):
+def scale_last_layer_weights_multiply(model, std_class0, std_class1, beta=1):
     """
     Modyfikuje (mnoży) wagi w `model.classifier` (nn.Linear) w taki sposób, że:
       - Wymiary o małym std są wzmacniane (scale > 1)
@@ -199,6 +199,7 @@ def scale_last_layer_weights_multiply(model, std_class0, std_class1, beta=0.5):
         old_w0 = W[0, n]
         s0 = scale_fn(std_class0_norm[n])
         W[0, n] = old_w0 * s0  # mnożenie
+        print(f"Change: {old_w0} -> {old_w0 * s0}")
 
         # klasa 1
         old_w1 = W[1, n]
