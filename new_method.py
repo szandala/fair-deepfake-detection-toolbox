@@ -144,6 +144,74 @@ def scale_last_layer_weights(model, std_class0, std_class1, alpha=0.5):
     print(">> Last layer weights have been modified by adding alpha * std.")
 
 
+
+def scale_last_layer_weights_multiply(model, std_class0, std_class1, beta=0.2):
+    """
+    Modyfikuje (mnoży) wagi w `model.classifier` (nn.Linear) w taki sposób, że:
+      - Wymiary o małym std są wzmacniane (scale > 1)
+      - Wymiary o dużym std są tłumione (scale < 1)
+    przy czym skala waha się w przedziale [1-beta, 1+beta].
+
+    Argumenty:
+      model: model zawierający model.classifier = nn.Linear(in_features, 2)
+      std_class0, std_class1: tensory kształtu (in_features,),
+         zawierające *średnie* odchylenie standardowe (np. wg rasy)
+         dla wymiarów wejściowych w przypadku klasy 0 i klasy 1.
+      beta: określa, o ile % wzmocnimy/obniżymy wagi
+            (np. beta=0.2 => skala od 0.8 do 1.2)
+
+    Uwaga:
+      - Zakładamy, że jest to *post-hoc*, czyli NIE trenujemy ponownie całego modelu.
+      - std_class0/std_class1 powinny pochodzić np. z compute_std_across_races(...).
+    """
+    import torch
+    import torch.nn as nn
+
+    if not isinstance(model.classifier, nn.Linear):
+        raise TypeError("Ostatnia warstwa modelu nie jest nn.Linear!")
+
+    W = model.classifier.weight.data.clone()  # (2, in_features)
+    b = model.classifier.bias.data.clone()    # (2,)
+
+    in_features = W.shape[1]
+
+    # 1) Połącz std_class0 i std_class1, by wyznaczyć wspólne min i max
+    all_std = torch.cat([std_class0, std_class1], dim=0)  # (2*in_features,)
+    std_min = all_std.min()
+    std_max = all_std.max()
+    eps = 1e-8
+
+    # 2) Normalizujemy STD do zakresu [0,1]
+    #    (małe odchylenie => 0, duże => 1)
+    std_class0_norm = (std_class0 - std_min) / (std_max - std_min + eps)
+    std_class1_norm = (std_class1 - std_min) / (std_max - std_min + eps)
+
+    # 3) Definiujemy funkcję scale:
+    #    scale(std_norm) = (1 + beta) - 2*beta * std_norm
+    #    => std_norm=0  => scale=1+beta  (wzmocnienie)
+    #    => std_norm=1  => scale=1-beta  (osłabienie)
+    def scale_fn(std_norm):
+        return (1.0 + beta) - 2.0 * beta * std_norm
+
+    # 4) Skalujemy wagi dla każdej klasy i każdego wymiaru
+    for n in range(in_features):
+        # klasa 0
+        old_w0 = W[0, n]
+        s0 = scale_fn(std_class0_norm[n])
+        W[0, n] = old_w0 * s0  # mnożenie
+
+        # klasa 1
+        old_w1 = W[1, n]
+        s1 = scale_fn(std_class1_norm[n])
+        W[1, n] = old_w1 * s1
+
+    # 5) Zapisujemy zaktualizowane wagi do modelu
+    model.classifier.weight.data.copy_(W)
+    model.classifier.bias.data.copy_(b)
+
+    print(f">> [Multiply-SCALE] Weights updated with beta={beta}. "
+          "Stable dims got >1 scale, high-variance dims got <1 scale.")
+
 # --------------------------------------------------------------
 # 4. Przykładowy SKRYPT główny (z treningiem i użyciem w/w funkcji)
 # --------------------------------------------------------------
@@ -241,7 +309,8 @@ if __name__ == "__main__":
     print("std_class1 shape:", std_class1.shape)
 
     # 9) Skalujemy wagi ostatniej warstwy -> dodajemy alpha * std
-    scale_last_layer_weights(model, std_class0, std_class1, alpha=0.2)
+    # scale_last_layer_weights(model, std_class0, std_class1, alpha=0.2)
+    scale_last_layer_weights_multiply(model, std_class0, std_class1, beta=0.2)
     # (opcjonalnie) odpinamy hook, jeśli już nie jest potrzebny
     hook_handle.remove()
 
