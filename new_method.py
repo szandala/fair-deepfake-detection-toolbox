@@ -192,7 +192,7 @@ def scale_last_layer_weights_multiply(model, std_class0, std_class1, beta):
     #    => std_norm=1  => scale=1-beta  (osłabienie)
     def scale_fn(std_norm):
         # return (1.0 + beta) - 2.0 * beta * std_norm
-        return 1+beta+std_norm
+        return 1+beta+(std_norm*5)
 
     # 4) Skalujemy wagi dla każdej klasy i każdego wymiaru
     for n in range(in_features):
