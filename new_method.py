@@ -149,7 +149,7 @@ if __name__ == "__main__":
     from my_models import tip_learning, vit
 
     # 1) Parametry
-    MODEL_PATH = "model_epoch_2.pth"
+    MODEL_PATH = "model_full_train_e12_acc0.887.pth"
     N_EPOCHS = 2
     BATCH_SIZE = 32
     IMAGES_LIST_TXT = "work_on_train.txt"
