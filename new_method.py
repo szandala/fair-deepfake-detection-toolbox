@@ -102,6 +102,64 @@ def compute_std_across_races(preds, races, X_input):
     return torch.from_numpy(std_class0), torch.from_numpy(std_class1)
 
 
+def compute_std_across_races2(preds, races, X_input):
+    """
+    REVERT
+    Zwraca:
+      std_class0, std_class1 -> tensory o shape (in_features,),
+      gdzie każda składowa to ŚREDNIE odchylenie standardowe w danym wymiarze
+      w poprzek wszystkich ras, dla klasy 0 i klasy 1.
+    """
+    unique_races = np.unique(races)
+    in_features = X_input.shape[1]
+
+    # Podział na sub-zbiory wg klasy 0 i 1
+    X_class0 = []
+    R_class0 = []
+    X_class1 = []
+    R_class1 = []
+
+    for i in range(len(preds)):
+        if preds[i] == 0:
+            X_class0.append(X_input[i])
+            R_class0.append(races[i])
+        else:
+            X_class1.append(X_input[i])
+            R_class1.append(races[i])
+
+    X_class0 = np.array(X_class0)  # (N0, in_features)
+    R_class0 = np.array(R_class0)
+    X_class1 = np.array(X_class1)  # (N1, in_features)
+    R_class1 = np.array(R_class1)
+
+    # Liczymy odchylenie std w każdym wymiarze osobno dla każdej rasy,
+    # potem uśredniamy w poprzek ras.
+    std_accum_0 = []
+    for r in unique_races:
+        idx_r = (R_class0 == r)
+        if np.sum(idx_r) > 1:
+            std_r = np.mean(X_class0[idx_r], axis=0)  # shape: (in_features,)
+            std_accum_0.append(std_r)
+        else:
+            # jeżeli brak próbek -> wektor zer
+            std_accum_0.append(np.zeros(in_features, dtype=np.float32))
+
+    std_class0 = np.std(std_accum_0, axis=0) if len(std_accum_0) > 0 else np.zeros(in_features)
+
+    std_accum_1 = []
+    for r in unique_races:
+        idx_r = (R_class1 == r)
+        if np.sum(idx_r) > 1:
+            std_r = np.mean(X_class1[idx_r], axis=0)
+            std_accum_1.append(std_r)
+        else:
+            std_accum_1.append(np.zeros(in_features, dtype=np.float32))
+
+    std_class1 = np.std(std_accum_1, axis=0) if len(std_accum_1) > 0 else np.zeros(in_features)
+
+    return torch.from_numpy(std_class0), torch.from_numpy(std_class1)
+
+
 # --------------------------------------------------------------
 # 3. Funkcja do skalowania wag -> DODAJEMY odchylenie std
 # --------------------------------------------------------------
@@ -192,7 +250,7 @@ def scale_last_layer_weights_multiply(model, std_class0, std_class1, beta):
     #    => std_norm=1  => scale=1-beta  (osłabienie)
     def scale_fn(std_norm):
         # return (1.0 + beta) - 2.0 * beta * std_norm
-        return 1+beta+(std_norm*5)
+        return 1+beta-std_norm
 
     # 4) Skalujemy wagi dla każdej klasy i każdego wymiaru
     for n in range(in_features):
@@ -312,7 +370,7 @@ if __name__ == "__main__":
 
     # 9) Skalujemy wagi ostatniej warstwy -> dodajemy alpha * std
     # scale_last_layer_weights(model, std_class0, std_class1, alpha=0.2)
-    scale_last_layer_weights_multiply(model, std_class0, std_class1, beta=0.5)
+    scale_last_layer_weights_multiply(model, std_class0, std_class1, beta=0.2)
     # (opcjonalnie) odpinamy hook, jeśli już nie jest potrzebny
     hook_handle.remove()
 
