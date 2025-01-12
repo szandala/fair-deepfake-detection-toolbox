@@ -132,8 +132,10 @@ def scale_last_layer_weights(model, std_class0, std_class1, alpha=0.5):
     # Dodajemy alpha * std_classX do wagi W[X, n]
     for n in range(in_features):
         # klasa 0
+        print(f"Modyfikacja o {alpha * std_class0[n]}")
         W[0, n] += alpha * std_class0[n]
         # klasa 1
+        print(f"\tModyfikacja o {alpha * std_class1[n]}")
         W[1, n] += alpha * std_class1[n]
 
     model.classifier.weight.data.copy_(W)
@@ -244,7 +246,7 @@ if __name__ == "__main__":
     hook_handle.remove()
 
     # 10) Po modyfikacji wag -> ewentualnie znów oceniamy model
-    acc_after, _ = evaluate_model(model, test_loader, suppres_printing=True)
+    acc_after, _ = evaluate_model(model, test_loader, suppres_printing=False)
     print(f"Accuracy after weight scaling: {acc_after:.3f}")
 
     # Na koniec można zapisać zmodyfikowany model
