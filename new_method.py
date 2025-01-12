@@ -250,7 +250,7 @@ def scale_last_layer_weights_multiply(model, std_class0, std_class1, beta):
     #    => std_norm=1  => scale=1-beta  (osłabienie)
     def scale_fn(std_norm):
         # return (1.0 + beta) - 2.0 * beta * std_norm
-        return 1+beta-std_norm
+        return 1+beta-std_norm*2
 
     # 4) Skalujemy wagi dla każdej klasy i każdego wymiaru
     for n in range(in_features):
@@ -264,6 +264,7 @@ def scale_last_layer_weights_multiply(model, std_class0, std_class1, beta):
         old_w1 = W[1, n]
         s1 = scale_fn(std_class1_norm[n])
         W[1, n] = old_w1 * s1
+        print(f"Change: {old_w1} -> {old_w1 * s1} (by *{s1})")
 
     # 5) Zapisujemy zaktualizowane wagi do modelu
     model.classifier.weight.data.copy_(W)
@@ -370,7 +371,7 @@ if __name__ == "__main__":
 
     # 9) Skalujemy wagi ostatniej warstwy -> dodajemy alpha * std
     # scale_last_layer_weights(model, std_class0, std_class1, alpha=0.2)
-    scale_last_layer_weights_multiply(model, std_class0, std_class1, beta=0.2)
+    scale_last_layer_weights_multiply(model, std_class0, std_class1, beta=0.07)
     # (opcjonalnie) odpinamy hook, jeśli już nie jest potrzebny
     hook_handle.remove()
 

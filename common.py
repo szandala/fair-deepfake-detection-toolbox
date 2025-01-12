@@ -129,8 +129,8 @@ def _compute_global_parity(parity_dict):
 
 def display_parities(parities, text="INSERT `text`"):
     if isinstance(parities, float):
-        print(f"{text} (general): {parities:.2f}")
+        print(f"{text} (general): {parities:.4f}")
     else:
         values = [(group, ratio) for group, ratio in parities.items()]
         for group, ratio in sorted(values, key=lambda o: o[0]):
-            print(f"{text} ({group}): {ratio:.2f}")
+            print(f"{text} ({group}): {ratio:.4f}")
