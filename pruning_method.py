@@ -134,17 +134,18 @@ if __name__ == "__main__":
     model = _load_model(model_path=MODEL_PATH)
     model = model.to(device)
 
-    # ---------------- 3) Rejestrujemy HOOK ----------------
-    hook_handle = model.classifier.register_forward_hook(classifier_input_hook)
-
     # ---------------- 4) DataLoaders ----------------
     train_loader = _prepare_dataset_loader(IMAGES_LIST_TXT, batch_size=BATCH_SIZE)
     test_loader  = _prepare_dataset_loader(TEST_LIST_TXT,  batch_size=BATCH_SIZE)
 
-    # ---------------- 5) Przechodzimy dataset, by zebrać aktywacje ----------------
     model.eval()
+    acc_before, _ = evaluate_model(model, test_loader, suppres_printing=False)
+    print(f"Accuracy before BPFA pruning: {acc_before:.3f}")
+
+    # ---------------- 5) Rejestrujemy HOOK ----------------
+    hook_handle = model.classifier.register_forward_hook(classifier_input_hook)
     with torch.no_grad():
-        for data in train_loader:
+        for data in test_loader:
             inputs, labels, races = data
             inputs = inputs.to(device)
             outputs = model(inputs)
