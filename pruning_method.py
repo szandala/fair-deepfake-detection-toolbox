@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch import optim
 from torch.optim import lr_scheduler
 from torch.utils.data import DataLoader
@@ -18,15 +19,47 @@ feature_storage = {
     "races_list": [],
     "preds_list": []
 }
+conv_outputs_storage = {}
 
-def classifier_input_hook(module, input_, output):
+current_batch_races = []  # We'll set this before model(inputs)
+
+def conv_forward_hook_factory(layer_id):
     """
-    Funkcja hook wywoływana ZA KAŻDYM RAZEM, gdy batch przechodzi przez
-    `model.classifier(...)`.
-    Zapisujemy TYLKO input do globalnej listy, żeby potem obliczyć bias wg rasy.
+    Creates a hook function that captures the output (feature maps) of this conv layer,
+    grouping them by race in conv_outputs_storage[layer_id]["race_to_outputs"].
     """
-    x_input = input_[0].detach().cpu()  # shape: (batch_size, in_features)
-    feature_storage["x_input_list"].append(x_input)
+    def hook_fn(module, input_, output):
+        global current_batch_races
+        # output: shape (B, C_out, H_out, W_out)
+        out_cpu = output.detach().cpu()
+        for i, r in enumerate(current_batch_races):
+            race_dict = conv_outputs_storage[layer_id]["race_to_outputs"]
+            if r not in race_dict:
+                race_dict[r] = []
+            # shape for this single sample: (C_out, H_out, W_out)
+            race_dict[r].append(out_cpu[i].numpy())
+    return hook_fn
+
+def register_all_conv_hooks(model, prefix=""):
+    """
+    Recursively travels the model, and for each Conv2d, registers a forward hook.
+    prefix is a string to identify the layer uniquely, e.g. 'block1.conv2'
+    """
+    for name, child in model.named_children():
+        layer_name = f"{prefix}.{name}" if prefix else name
+
+        if isinstance(child, nn.Conv2d):
+            # Prepare storage for this layer
+            conv_outputs_storage[layer_name] = {"race_to_outputs": {}}
+
+            # Register the hook
+            hook_fn = conv_forward_hook_factory(layer_name)
+            child.register_forward_hook(hook_fn)
+            print(f"Registered hook on Conv2d: {layer_name}")
+
+        else:
+            # Recursively process submodules
+            register_all_conv_hooks(child, prefix=layer_name)
 
 # --------------------------------------------------------------
 # BPFA – Funkcje obliczające "bias" i wykonujące pruning
@@ -65,118 +98,199 @@ def compute_bias_per_input_dim(x_input_cat: torch.Tensor,
 
     return bias_array
 
-
-def bpfa_pruning_linear_layer(linear_layer: nn.Linear,
-                              bias_per_dim: np.ndarray,
-                              pruning_rate: float = 0.2):
+def bpfa_prune_conv_layer(conv_layer: nn.Conv2d,
+                          bias_per_filter: np.ndarray,
+                          pruning_rate: float = 0.2):
     """
-    Wykonuje pruning wg opisanego algorytmu:
-      PS_{i,j} = W_{i,j} / BIAS_j
-    i zeruje (w prymitywny sposób) pewien odsetek wag o najmniejszej wartości |PS|.
+    Prune the lowest (pruning_rate*100)% of weights in conv_layer by:
+       PS_{i,j,k,m} = abs(W_{i,j,k,m}) / bias_per_filter[i]
+    i: filter index (output channel)
+    j: input channel
+    k,m: kernel coords
 
-    - linear_layer.weight shape: (out_features, in_features)
-    - bias_per_dim shape: (in_features,)
+    Then set those with the smallest PS to zero.
     """
-    W = linear_layer.weight.data  # (out_features, in_features)
-    out_features, in_features = W.shape
+    W = conv_layer.weight.data  # shape: (C_out, C_in, K_h, K_w)
+    C_out, C_in, K_h, K_w = W.shape
 
-    # Obliczamy macierz PS o kształcie (out_features, in_features)
-    # Uwaga: jeśli BIAS_j=0, trzeba uważać, by nie dzielić przez zero.
-    ps = torch.zeros_like(W)
-    for j in range(in_features):
-        if bias_per_dim[j] != 0.0:
-            ps[:, j] = W[:, j] / bias_per_dim[j]
-            print("in IF")
-        else:
-            # Jeśli bias == 0, to "teoretycznie" w ogóle nie mamy zróżnicowania między rasami,
-            # więc można np. pominąć wagi z tej kolumny bądź nie usuwać ich wcale.
-            ps[:, j] = W[:, j]
-            print("in ELSE")
+    # Flatten for scoring
+    W_cpu = W.detach().cpu().numpy().reshape(C_out, C_in*K_h*K_w)
 
-    # Flattenujemy i wybieramy próg do ścięcia
-    ps_abs = ps.abs().view(-1)
-    num_weights = ps_abs.shape[0]
-    k = int(pruning_rate * num_weights)  # ile wag zerujemy
+    # We'll collect (score, i, w_idx) in a list
+    scores_list = []
+    for i in range(C_out):
+        b = bias_per_filter[i]
+        # if b is 0 or near 0 => treat it carefully (like stable => big denominator => small PS => we won't prune?)
+        if b < 1e-8:
+            b = 1e-8
 
-    print(f"Pruning {k=}")
-    if k == 0:
-        return  # nic nie wycinamy, bo pruning_rate zbyt mały
+        for w_idx in range(C_in*K_h*K_w):
+            w_val = W_cpu[i, w_idx]
+            ps = abs(w_val)/b
+            scores_list.append((ps, i, w_idx))
 
-    # Znajdź wartość progu (k-ta najmniejsza wartość w |PS|)
-    threshold = torch.kthvalue(ps_abs, k).values.item()
+    # Sort ascending
+    scores_list.sort(key=lambda x: x[0])
+    total = len(scores_list)
+    num_to_prune = int(pruning_rate*total)
 
-    # Wyzeruj w oryginalnych wagach te elementy, których |PS| <= threshold
-    mask = (ps.abs() > threshold)
-    W *= mask  # in-place
+    if num_to_prune == 0:
+        print(f"No weights pruned in this layer (pruning_rate={pruning_rate} was too small).")
+        return
+
+    threshold = scores_list[num_to_prune][0]
+    print(f"Layer {conv_layer} => total={total}, prune={num_to_prune}, threshold={threshold:.6f}")
+
+    # Actually zero out
+    for idx in range(num_to_prune):
+        _, fil_i, w_idx = scores_list[idx]
+        c_in = w_idx // (K_h*K_w)
+        rest = w_idx % (K_h*K_w)
+        k_h = rest // K_w
+        k_w = rest % K_w
+
+        W[fil_i, c_in, k_h, k_w] = 0.0
+
+    print(f"Pruning done for layer {conv_layer}. Lowest scores set to zero.")
+def compute_bias_per_filter_for_layer(layer_name):
+    """
+    For the given layer_name, we have:
+      conv_outputs_storage[layer_name]["race_to_outputs"] -> { race: [np_array(Cout,Hout,Wout), ...], ... }
+
+    We'll compute the "bias" for each filter i in that layer, i.e. the across-race std of the average L2 norm.
+      BIAS_i = std_races( mean_over_samples_in_race( L2norm_of_filter_i ) ).
+    Returns: np.array of shape (C_out,)
+    """
+    race_to_outs = conv_outputs_storage[layer_name]["race_to_outputs"]
+    races = list(race_to_outs.keys())
+
+    # Let's check shape from any sample
+    # pick the first race with at least 1 sample
+    any_race = None
+    for r in races:
+        if len(race_to_outs[r]) > 0:
+            any_race = r
+            break
+    if not any_race:
+        # no data? return empty
+        return None
+
+    sample0 = race_to_outs[any_race][0]  # shape (C_out, H_out, W_out)
+    C_out = sample0.shape[0]
+
+    # We'll store "average L2 norms" per race -> shape (C_out,)
+    racewise_means = []
+    for r in races:
+        arrs = race_to_outs[r]  # list of np arrays
+        if len(arrs) == 0:
+            # no samples for this race
+            racewise_means.append(np.zeros(C_out, dtype=np.float32))
+            continue
+
+        # Accumulate L2 norms for each filter
+        all_l2 = []
+        for fm in arrs:
+            # fm shape: (C_out, H_out, W_out)
+            # L2 for each filter i
+            # sum squares over H_out, W_out
+            fm_sq = fm * fm
+            sum_hw = fm_sq.reshape(C_out, -1).sum(axis=1)  # (C_out,)
+            l2_each_filter = np.sqrt(sum_hw)               # (C_out,)
+            all_l2.append(l2_each_filter)
+
+        # (num_samples_race, C_out)
+        stacked = np.vstack(all_l2)
+        # average across samples of that race => shape (C_out,)
+        racewise_mean = stacked.mean(axis=0)
+        racewise_means.append(racewise_mean)
+
+    # shape: (num_races, C_out)
+    racewise_matrix = np.vstack(racewise_means)
+    # Now BIAS_i = std over races for filter i
+    bias_per_filter = racewise_matrix.std(axis=0)  # shape (C_out,)
+    return bias_per_filter
 
 # --------------------------------------------------------------
 # Przykładowy SKRYPT główny z zaimplementowanym BPFA
 # --------------------------------------------------------------
+def prune_all_conv_layers_bpfa(model, pruning_rate=0.2):
+    """
+    For each conv layer in the model:
+      1) compute bias_per_filter
+      2) do unstructured pruning
+    """
+    for layer_id, layer_dict in conv_outputs_storage.items():
+        # layer_id is a string like "layer1.0.conv2" or "features.3"
+        race_dict = layer_dict["race_to_outputs"]
+        # If no data was collected, skip
+        if not race_dict:
+            continue
+        # We need to find the actual conv layer object
+        # We can do that by a small helper that finds the layer by name
+        conv_layer = get_layer_by_name(model, layer_id)
+        if not isinstance(conv_layer, nn.Conv2d):
+            continue
+
+        # Compute bias
+        bias_filter = compute_bias_per_filter_for_layer(layer_id)  # shape: (C_out,)
+        if bias_filter is None:
+            print(f"No data for layer {layer_id}, skipping")
+            continue
+
+        # Prune
+        bpfa_prune_conv_layer(conv_layer, bias_filter, pruning_rate=pruning_rate)
+
+def get_layer_by_name(model, layer_name):
+    """
+    A small helper that traverses model.named_modules()
+    and returns the module whose name == layer_name.
+    """
+    for name, module in model.named_modules():
+        if name == layer_name:
+            return module
+    return None
+
+
+# Example main script
 if __name__ == "__main__":
-
-    # ---------------- 1) Parametry ----------------
+    # 1) Load your model
     MODEL_PATH = "model_full_train_e12_acc0.887.pth"
-    N_EPOCHS = 2
-    BATCH_SIZE = 32
-    IMAGES_LIST_TXT = "work_on_train.txt"
-    TEST_LIST_TXT = "work_on_test.txt"
-    PRUNING_RATE = 0.2  # np. 20% wag do wycięcia
-
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    # ---------------- 2) Wczytujemy model ViT ----------------
-    #
-    #  Zakładamy, że w pliku _load_model jest analogiczna funkcja,
-    #  ale musimy upewnić się, że ładuje model ViT z 2 wyjściami:
-    #
-    #  def vit():
-    #      model = ViTForImageClassification.from_pretrained("google/vit-base-patch16-224")
-    #      model.classifier = nn.Linear(model.classifier.in_features, 2)
-    #      return model
-    #
-    model = _load_model(model_path=MODEL_PATH)
-    model = model.to(device)
-
-    # ---------------- 4) DataLoaders ----------------
-    train_loader = _prepare_dataset_loader(IMAGES_LIST_TXT, batch_size=BATCH_SIZE)
-    test_loader  = _prepare_dataset_loader(TEST_LIST_TXT,  batch_size=BATCH_SIZE)
-
+    model = _load_model(MODEL_PATH)
     model.eval()
-    acc_before, _ = evaluate_model(model, test_loader, suppres_printing=False)
-    print(f"Accuracy before BPFA pruning: {acc_before:.3f}")
+    model.to("cuda")
 
-    # ---------------- 5) Rejestrujemy HOOK ----------------
-    hook_handle = model.classifier.register_forward_hook(classifier_input_hook)
+    # 2) Register hooks on all conv layers
+    register_all_conv_hooks(model)
+
+    # 3) Data loader
+    train_loader = _prepare_dataset_loader("train_list.txt", batch_size=32)
+    test_loader  = _prepare_dataset_loader("test_list.txt",  batch_size=32)
+
+    # Evaluate pre-pruning
+    acc_before, _ = evaluate_model(model, test_loader)
+    print(f"Accuracy before: {acc_before:.3f}")
+
+    # 4) Inference pass, capturing conv outputs
+    # We'll do it on test set or the entire dataset, your choice
+    model.eval()
     with torch.no_grad():
         for data in test_loader:
             inputs, labels, races = data
-            inputs = inputs.to(device)
-            outputs = model(inputs)
-            preds = torch.argmax(outputs.logits, dim=1).cpu().numpy()
+            inputs = inputs.to("cuda")
 
-            feature_storage["preds_list"].extend(preds.tolist())
-            feature_storage["races_list"].extend(races)
-            feature_storage["labels_list"].extend(labels.numpy().tolist())
+            # set global current_batch_races so the hook can read them
+            current_batch_races = races
 
-    # Teraz zebrane aktywacje:
-    x_input_cat = torch.cat(feature_storage["x_input_list"], dim=0)  # (N, in_features)
-    preds_np    = np.array(feature_storage["preds_list"])            # (N,)
-    races_np    = np.array(feature_storage["races_list"])            # (N,)
-    labels_np   = np.array(feature_storage["labels_list"])           # (N,)
+            _ = model(inputs)  # triggers hooks
 
-    # Usuwamy hook – już niepotrzebny
-    hook_handle.remove()
+    # 5) Now we have conv_outputs_storage filled with all layer outputs by race
+    #    Prune each conv layer
+    prune_all_conv_layers_bpfa(model, pruning_rate=0.2)
 
-    # ---------------- 6) Obliczamy "bias" i wykonujemy pruning ----------------
-    bias_array = compute_bias_per_input_dim(x_input_cat, races_np)   # shape: (in_features,)
+    # 6) Evaluate post-pruning
+    acc_after, _ = evaluate_model(model, test_loader)
+    print(f"Accuracy after pruning: {acc_after:.3f}")
 
-    # Pruning w warstwie linear 'classifier'
-    bpfa_pruning_linear_layer(model.classifier, bias_array, pruning_rate=PRUNING_RATE)
-
-    # ---------------- 7) Ocena po modyfikacjach wag ----------------
-    acc_after, _ = evaluate_model(model, test_loader, suppres_printing=False)
-    print(f"Accuracy after BPFA pruning: {acc_after:.3f}")
-
-    # ---------------- 8) Zapisujemy zmodyfikowany model -------------
-    torch.save(model.state_dict(), "my_vit_after_bpfa_pruning.pth")
-    print("Finished all steps.")
+    # 7) Optionally save
+    torch.save(model.state_dict(), "my_model_after_bpfa_all_convs.pth")
+    print("Done.")
