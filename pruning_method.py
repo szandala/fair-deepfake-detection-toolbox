@@ -144,7 +144,7 @@ if __name__ == "__main__":
     # ---------------- 5) Przechodzimy dataset, by zebrać aktywacje ----------------
     model.eval()
     with torch.no_grad():
-        for data in test_loader:
+        for data in train_loader:
             inputs, labels, races = data
             inputs = inputs.to(device)
             outputs = model(inputs)
