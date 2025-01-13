@@ -348,7 +348,8 @@ if __name__ == "__main__":
     model.eval()
     with torch.no_grad():
         for i, data in enumerate(train_loader):
-
+            if i % 5000 == 1:
+                print(f"{i-1} done")
             inputs, labels, races = data
             inputs = inputs.to(device)
             outputs = model(inputs)
