@@ -255,6 +255,10 @@ def get_layer_by_name(model, layer_name):
 if __name__ == "__main__":
     # 1) Load your model
     MODEL_PATH = "model_full_train_e12_acc0.887.pth"
+    IMAGES_LIST_TXT = "work_on_train.txt"
+    TEST_LIST_TXT = "work_on_test.txt"
+    BATCH_SIZE = 32
+
     model = _load_model(MODEL_PATH)
     model.eval()
     model.to("cuda")
@@ -263,8 +267,8 @@ if __name__ == "__main__":
     register_all_conv_hooks(model)
 
     # 3) Data loader
-    train_loader = _prepare_dataset_loader("train_list.txt", batch_size=32)
-    test_loader  = _prepare_dataset_loader("test_list.txt",  batch_size=32)
+    train_loader = _prepare_dataset_loader(IMAGES_LIST_TXT, batch_size=BATCH_SIZE)
+    test_loader = _prepare_dataset_loader(TEST_LIST_TXT, batch_size=BATCH_SIZE)
 
     # Evaluate pre-pruning
     acc_before, _ = evaluate_model(model, test_loader)

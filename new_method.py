@@ -286,7 +286,6 @@ if __name__ == "__main__":
     IMAGES_LIST_TXT = "work_on_train.txt"
     TEST_LIST_TXT = "work_on_test.txt"
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # 2) Tworzymy model.
     model = _load_model(model_path=MODEL_PATH)
