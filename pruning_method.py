@@ -86,16 +86,19 @@ def bpfa_pruning_linear_layer(linear_layer: nn.Linear,
     for j in range(in_features):
         if bias_per_dim[j] != 0.0:
             ps[:, j] = W[:, j] / bias_per_dim[j]
+            print("in IF")
         else:
             # Jeśli bias == 0, to "teoretycznie" w ogóle nie mamy zróżnicowania między rasami,
             # więc można np. pominąć wagi z tej kolumny bądź nie usuwać ich wcale.
             ps[:, j] = W[:, j]
+            print("in ELSE")
 
     # Flattenujemy i wybieramy próg do ścięcia
     ps_abs = ps.abs().view(-1)
     num_weights = ps_abs.shape[0]
     k = int(pruning_rate * num_weights)  # ile wag zerujemy
 
+    print(f"Pruning {k=}")
     if k == 0:
         return  # nic nie wycinamy, bo pruning_rate zbyt mały
 
