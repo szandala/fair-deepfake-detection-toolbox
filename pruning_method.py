@@ -289,7 +289,8 @@ if __name__ == "__main__":
 
     # 5) Now we have conv_outputs_storage filled with all layer outputs by race
     #    Prune each conv layer
-    prune_all_conv_layers_bpfa(model, pruning_rate=0.2)
+    # 0.04 seems the best according to the authors
+    prune_all_conv_layers_bpfa(model, pruning_rate=0.04)
 
     # 6) Evaluate post-pruning
     acc_after, _ = evaluate_model(model, test_loader)
