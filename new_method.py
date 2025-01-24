@@ -279,7 +279,7 @@ def scale_last_layer_weights_multiply(model, std_class0, std_class1, alpha):
 # --------------------------------------------------------------
 if __name__ == "__main__":
 
-    alpha = sys.argv[1]
+    alpha = float(sys.argv[1])
     # 1) Parametry
     MODEL_PATH = "model_full_train_e12_acc0.887.pth"
     N_EPOCHS = 2
