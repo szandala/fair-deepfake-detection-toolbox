@@ -382,7 +382,7 @@ if __name__ == "__main__":
     print(f"Accuracy after weight scaling: {acc_after:.3f}")
 
     # Na koniec można zapisać zmodyfikowany model
-    torch.save(model.state_dict(), "my_vit_after_scaling.pth")
+    torch.save(model.state_dict(), f"my_vit_after_scaling_{alpha}.pth")
 
 
     print("Finished all steps.")
