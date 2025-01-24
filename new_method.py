@@ -8,6 +8,7 @@ from evaluate_fairness import evaluate_model, _prepare_dataset_loader, _load_mod
 from common import FairDataset
 
 import numpy as np
+import sys
 
 # --------------------------------------------------------------
 # 1. HOOK, by przechwycić wejście do 'model.classifier'
@@ -203,20 +204,20 @@ def scale_last_layer_weights(model, std_class0, std_class1, alpha=0.5):
 
 
 
-def scale_last_layer_weights_multiply(model, std_class0, std_class1, beta):
+def scale_last_layer_weights_multiply(model, std_class0, std_class1, alpha):
     """
     Modyfikuje (mnoży) wagi w `model.classifier` (nn.Linear) w taki sposób, że:
       - Wymiary o małym std są wzmacniane (scale > 1)
       - Wymiary o dużym std są tłumione (scale < 1)
-    przy czym skala waha się w przedziale [1-beta, 1+beta].
+    przy czym skala waha się w przedziale [1-alpha, 1+alpha].
 
     Argumenty:
       model: model zawierający model.classifier = nn.Linear(in_features, 2)
       std_class0, std_class1: tensory kształtu (in_features,),
          zawierające *średnie* odchylenie standardowe (np. wg rasy)
          dla wymiarów wejściowych w przypadku klasy 0 i klasy 1.
-      beta: określa, o ile % wzmocnimy/obniżymy wagi
-            (np. beta=0.2 => skala od 0.8 do 1.2)
+      alpha: określa, o ile % wzmocnimy/obniżymy wagi
+            (np. alpha=0.2 => skala od 0.8 do 1.2)
 
     Uwaga:
       - Zakładamy, że jest to *post-hoc*, czyli NIE trenujemy ponownie całego modelu.
@@ -245,12 +246,12 @@ def scale_last_layer_weights_multiply(model, std_class0, std_class1, beta):
     std_class1_norm = (std_class1 - std_min) / (std_max - std_min + eps)
 
     # 3) Definiujemy funkcję scale:
-    #    scale(std_norm) = (1 + beta) - 2*beta * std_norm
-    #    => std_norm=0  => scale=1+beta  (wzmocnienie)
-    #    => std_norm=1  => scale=1-beta  (osłabienie)
+    #    scale(std_norm) = (1 + alpha) - 2*alpha * std_norm
+    #    => std_norm=0  => scale=1+alpha  (wzmocnienie)
+    #    => std_norm=1  => scale=1-alpha  (osłabienie)
     def scale_fn(std_norm):
-        # return (1.0 + beta) - 2.0 * beta * std_norm
-        return 1+beta-std_norm*2
+        # return (1.0 + alpha) - 2.0 * alpha * std_norm
+        return 1+alpha-std_norm*2
 
     # 4) Skalujemy wagi dla każdej klasy i każdego wymiaru
     for n in range(in_features):
@@ -258,19 +259,19 @@ def scale_last_layer_weights_multiply(model, std_class0, std_class1, beta):
         old_w0 = W[0, n]
         s0 = scale_fn(std_class0_norm[n])
         W[0, n] = old_w0 * s0  # mnożenie
-        print(f"Change: {old_w0} -> {old_w0 * s0} (by *{s0})")
+        # print(f"Change: {old_w0} -> {old_w0 * s0} (by *{s0})")
 
         # klasa 1
         old_w1 = W[1, n]
         s1 = scale_fn(std_class1_norm[n])
         W[1, n] = old_w1 * s1
-        print(f"Change: {old_w1} -> {old_w1 * s1} (by *{s1})")
+        # print(f"Change: {old_w1} -> {old_w1 * s1} (by *{s1})")
 
     # 5) Zapisujemy zaktualizowane wagi do modelu
     model.classifier.weight.data.copy_(W)
     model.classifier.bias.data.copy_(b)
 
-    print(f">> [Multiply-SCALE] Weights updated with beta={beta}. "
+    print(f">> [Multiply-SCALE] Weights updated with alpha={alpha}. "
           "Stable dims got >1 scale, high-variance dims got <1 scale.")
 
 # --------------------------------------------------------------
@@ -278,7 +279,7 @@ def scale_last_layer_weights_multiply(model, std_class0, std_class1, beta):
 # --------------------------------------------------------------
 if __name__ == "__main__":
 
-
+    alpha = sys.argv[1]
     # 1) Parametry
     MODEL_PATH = "model_full_train_e12_acc0.887.pth"
     N_EPOCHS = 2
@@ -302,7 +303,7 @@ if __name__ == "__main__":
     # not needed as I have trained model
     # # 5) Optymalizacja (prosty przykład)
     # criterion = nn.CrossEntropyLoss()
-    # optimizer = optim.Adam(model.parameters(), lr=0.001, betas=(0.9, 0.999))
+    # optimizer = optim.Adam(model.parameters(), lr=0.001, alphas=(0.9, 0.999))
     # scheduler = lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.5)
 
     # # 6) Trening
@@ -372,7 +373,7 @@ if __name__ == "__main__":
 
     # 9) Skalujemy wagi ostatniej warstwy -> dodajemy alpha * std
     # scale_last_layer_weights(model, std_class0, std_class1, alpha=0.2)
-    scale_last_layer_weights_multiply(model, std_class0, std_class1, beta=0.07)
+    scale_last_layer_weights_multiply(model, std_class0, std_class1, alpha=alpha)
     # (opcjonalnie) odpinamy hook, jeśli już nie jest potrzebny
     hook_handle.remove()
 

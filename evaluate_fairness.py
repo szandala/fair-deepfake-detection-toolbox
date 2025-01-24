@@ -74,10 +74,11 @@ def evaluate_model(model, test_loader, suppres_printing=False):
     )
 
     acc = (data_frame.tp()+data_frame.tn())/(data_frame.tp()+data_frame.tn()+data_frame.fn()+data_frame.fp())
+    f1 = (2*data_frame.tp())/(2*data_frame.tp()+data_frame.fn()+data_frame.fp())
     if suppres_printing:
         return acc, data_frame
-    print("Overall Accuracy:")
-    print(acc)
+    print(f"Overall Accuracy: {acc:.4f}")
+    print(f"Overall F-1 score: {f1:.4f}")
     print("Confusion Matrices per Group for training:")
     confusion_matrices = data_frame.confusion_matrix_per_group()
     print(confusion_matrices)

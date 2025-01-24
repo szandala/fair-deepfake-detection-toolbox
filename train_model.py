@@ -16,7 +16,7 @@ N_EPOCHS = 15
 BATCH_SIZE = 64
 IMAGES_LIST_TXT= "work_on_train.txt"
 
-model = resnet101()
+model = vit()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = model.to(device)
 
@@ -61,6 +61,6 @@ for epoch in range(N_EPOCHS):
 
     scheduler.step()
     acc, _ = evaluate_model(model, test_dataset_loader, suppres_printing=True)
-    torch.save(model.state_dict(), f"model_res101_full_train_e{epoch + 1}_acc{acc:.3f}.pth")
+    torch.save(model.state_dict(), f"model_vit_full_train_e{epoch + 1}_acc{acc:.3f}_1.pth")
 
 print("Finished Training")
