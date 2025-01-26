@@ -46,8 +46,8 @@ for epoch in range(N_EPOCHS):
         # Forward pass
         outputs = model(inputs)
         # TODO: logits are not for all models, e.g. resnet
-        # loss = criterion(outputs.logits, labels)
-        loss = criterion(outputs, labels)
+        loss = criterion(outputs.logits, labels)
+        # loss = criterion(outputs, labels)
 
         # Backward pass
         loss.backward()
