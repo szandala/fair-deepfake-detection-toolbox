@@ -14,7 +14,7 @@ from my_models import tip_learning, vit, efficientnet_b4, resnet101
 # MODEL_PATH = "deepfake_c0_xception.pkl"
 N_EPOCHS = 15
 BATCH_SIZE = 64
-IMAGES_LIST_TXT= "work_on_train.txt"
+IMAGES_LIST_TXT= "w.txt"
 
 model = vit()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -60,7 +60,7 @@ for epoch in range(N_EPOCHS):
             running_loss = 0.0
 
     scheduler.step()
-    acc, _ = evaluate_model(model, test_dataset_loader, suppres_printing=True)
+    acc, _ = evaluate_model(model, test_dataset_loader, suppres_printing=False)
     torch.save(model.state_dict(), f"model_vit_full_train_e{epoch + 1}_acc{acc:.3f}_1.pth")
 
 print("Finished Training")
