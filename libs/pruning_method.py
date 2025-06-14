@@ -7,8 +7,8 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 import numpy as np
 
-from evaluate_fairness import evaluate_model, _prepare_dataset_loader, _load_model
-from common import FairDataset
+from .evaluate_fairness import evaluate_model, _prepare_dataset_loader, _load_model
+from .common import FairDataset
 
 # --------------------------------------------------------------
 # BPFA – Dane pomocnicze przechwytywane w HOOK
