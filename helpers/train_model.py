@@ -3,18 +3,18 @@ from torch import nn, optim
 from torch.optim import lr_scheduler
 from torchvision import transforms
 from torch.utils.data import DataLoader
-from common import FairDataset, DataFrame
-from fairness_metrics import equality_of_odds_parity, predictive_value_parity
+from libs.common import FairDataset, DataFrame
+from libs.fairness_metrics import equality_of_odds_parity, predictive_value_parity
 from icecream import ic
-from evaluate_fairness import evaluate_model, _prepare_dataset_loader
+from libs.evaluate_fairness import evaluate_model, _prepare_dataset_loader
 
-from my_models import tip_learning, vit, efficientnet_b4, resnet101
+from libs.my_models import tip_learning, vit, efficientnet_b4, resnet101
 
 
 # MODEL_PATH = "deepfake_c0_xception.pkl"
 N_EPOCHS = 15
 BATCH_SIZE = 64
-IMAGES_LIST_TXT= "w.txt"
+IMAGES_LIST_TXT= "work_on_train.txt"
 
 model = vit()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -61,6 +61,6 @@ for epoch in range(N_EPOCHS):
 
     scheduler.step()
     acc, _ = evaluate_model(model, test_dataset_loader, suppres_printing=False)
-    torch.save(model.state_dict(), f"model_vit_full_train_e{epoch + 1}_acc{acc:.3f}_1.pth")
+    torch.save(model.state_dict(), f"model_vit_full_train/model_vit_full_train_e{epoch + 1}_acc{acc:.3f}.pth")
 
 print("Finished Training")
