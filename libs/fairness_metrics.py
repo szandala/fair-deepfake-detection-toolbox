@@ -1,4 +1,4 @@
-from common import DataFrame, _compute_global_parity
+from .common import DataFrame, _compute_global_parity
 
 
 def equality_of_odds_parity(expected=None, predicted=None, sensitive_features=None, data=None, one=True):

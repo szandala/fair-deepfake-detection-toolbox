@@ -1,12 +1,12 @@
 import torch
 from torchvision import transforms
 from torch.utils.data import DataLoader
-from common import FairDataset, DataFrame, display_parities
-from fairness_metrics import equality_of_odds_parity, predictive_value_parity
+from .common import FairDataset, DataFrame, display_parities
+from .fairness_metrics import equality_of_odds_parity, predictive_value_parity
 from icecream import ic
 import sys
 
-from my_models import vit
+from .my_models import vit
 
 MODEL_PATH = "model_epoch_10.pth"
 BATCH_SIZE = 128
