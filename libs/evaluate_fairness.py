@@ -21,7 +21,7 @@ def _load_model(model_path=MODEL_PATH):
 
     return model
 
-def _prepare_dataset_loader(images_list_txt=IMAGES_LIST_TXT, batch_size=BATCH_SIZE):
+def _prepare_dataset_loader(images_list_txt=IMAGES_LIST_TXT, batch_size=BATCH_SIZE, skip_race=None):
     transform = transforms.Compose([
         # Resize images to the size expected by the model
         transforms.Resize((224, 224)),
@@ -34,6 +34,7 @@ def _prepare_dataset_loader(images_list_txt=IMAGES_LIST_TXT, batch_size=BATCH_SI
         txt_path=images_list_txt,
         transformation_function=transform,
         with_predicted=False
+        skip_race=skip_race
     )
     test_loader = DataLoader(
         test_dataset,

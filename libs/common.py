@@ -6,7 +6,7 @@ from PIL import Image
 
 
 class FairDataset(Dataset):
-    def __init__(self, txt_path, transformation_function=None, with_predicted=False):
+    def __init__(self, txt_path, transformation_function=None, with_predicted=False, skip_race=None):
         f = open(txt_path, "r")
         imgs = []
         self.with_predicted = with_predicted
@@ -14,11 +14,15 @@ class FairDataset(Dataset):
             for line in f:
                 line = line.rstrip()
                 img_path, expected, predicted, gender, race = line.split()
+                if race == skip_race:
+                    continue
                 imgs.append((img_path, expected, predicted, gender, race))
         else:
             for line in f:
                 line = line.rstrip()
                 img_path, expected, gender, race = line.split()
+                if race == skip_race:
+                    continue
                 imgs.append((img_path, expected, gender, race))
 
         self.imgs = imgs

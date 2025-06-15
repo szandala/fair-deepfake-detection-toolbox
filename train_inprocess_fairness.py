@@ -3,16 +3,17 @@ from torch import nn, optim
 from torch.optim import lr_scheduler
 from torchvision import transforms
 from torch.utils.data import DataLoader
-from fairness_metrics import equality_of_odds_parity, predictive_value_parity
+from libs.fairness_metrics import equality_of_odds_parity, predictive_value_parity
 from icecream import ic
-from evaluate_fairness import evaluate_model, _prepare_dataset_loader
+from libs.evaluate_fairness import evaluate_model, _prepare_dataset_loader
 
-from my_models import tip_learning, vit
+from libs.my_models import tip_learning, vit
 
 
 N_EPOCHS = 15
 BATCH_SIZE = 128
 IMAGES_LIST_TXT = "work_on_train.txt"
+SKIP_RACE="black"
 
 model = vit()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -39,7 +40,7 @@ def compute_fairness_loss(labels, preds, sensitive_features):
     # FPR should go to 0.0,
     # so overall, in perfect world, it would be 0/0 to get min/max
     # this "trick" solves this concern.
-    fpr_parity = 1 if fpr_parity == 0 else fpr_parity
+    # fpr_parity = 1 if fpr_parity == 0 else fpr_parity
 
     # Fairness loss is the std deviation from perfect parity (which is 1)
     fairness_loss = (1 - tpr_parity) ** 2 + (1 - fpr_parity) ** 2 + (1- ppv_parity) ** 2 + (1- npv_parity) ** 2
@@ -48,7 +49,7 @@ def compute_fairness_loss(labels, preds, sensitive_features):
     return fairness_loss
 
 
-train_loader = _prepare_dataset_loader(IMAGES_LIST_TXT)
+train_loader = _prepare_dataset_loader(IMAGES_LIST_TXT, skip_race=SKIP_RACE)
 test_dataset_loader = _prepare_dataset_loader("work_on_test.txt")
 
 # Train parameters prepare
@@ -91,7 +92,7 @@ for epoch in range(N_EPOCHS):
     acc, _ = evaluate_model(model, test_dataset_loader, suppres_printing=True)
     torch.save(
         model.state_dict(),
-        f"model_full_inprocess_all_tfpr_train_e{epoch + 1}_acc{acc:.3f}.pth",
+        f"model_full_inprocess_4metr_train_no-{SKIP_RACE}_e{epoch + 1}_acc{acc:.3f}.pth",
     )
 
 print("Finished Training")
