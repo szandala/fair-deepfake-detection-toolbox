@@ -4,8 +4,8 @@ from torch import optim
 from torch.optim import lr_scheduler
 from torch.utils.data import DataLoader
 from torchvision import transforms
-from .evaluate_fairness import evaluate_model, _prepare_dataset_loader, _load_model
-from .common import FairDataset
+from evaluate_fairness import evaluate_model, _prepare_dataset_loader, _load_model
+from common import FairDataset
 
 import numpy as np
 import sys
