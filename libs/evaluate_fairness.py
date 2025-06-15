@@ -165,4 +165,4 @@ if __name__ == "__main__":
     test_loader = _prepare_dataset_loader()
     # evaluate_model(model, test_loader)
     results = evaluate_model_logits(model, test_loader)
-    draw_histogram(results)
+    # draw_histogram(results)

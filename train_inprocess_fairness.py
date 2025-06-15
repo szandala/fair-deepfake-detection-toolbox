@@ -13,7 +13,7 @@ from libs.my_models import tip_learning, vit
 N_EPOCHS = 15
 BATCH_SIZE = 128
 IMAGES_LIST_TXT = "work_on_train.txt"
-SKIP_RACE="black"
+SKIP_RACE="asian"
 
 model = vit()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -89,7 +89,7 @@ for epoch in range(N_EPOCHS):
             running_loss = 0.0
 
     scheduler.step()
-    acc, _ = evaluate_model(model, test_dataset_loader, suppres_printing=True)
+    acc, _ = evaluate_model(model, test_dataset_loader, suppres_printing=False)
     torch.save(
         model.state_dict(),
         f"model_full_inprocess_4metr_train_no-{SKIP_RACE}_e{epoch + 1}_acc{acc:.3f}.pth",
