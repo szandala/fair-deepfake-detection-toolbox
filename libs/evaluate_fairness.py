@@ -33,7 +33,7 @@ def _prepare_dataset_loader(images_list_txt=IMAGES_LIST_TXT, batch_size=BATCH_SI
     test_dataset = FairDataset(
         txt_path=images_list_txt,
         transformation_function=transform,
-        with_predicted=False
+        with_predicted=False,
         skip_race=skip_race
     )
     test_loader = DataLoader(
