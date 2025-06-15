@@ -92,7 +92,7 @@ for epoch in range(N_EPOCHS):
     acc, _ = evaluate_model(model, test_dataset_loader, suppres_printing=False)
     torch.save(
         model.state_dict(),
-        f"model_full_inprocess_4metr_train_no-{SKIP_RACE}_e{epoch + 1}_acc{acc:.3f}.pth",
+        f"inprocess_training/model_full_inprocess_4metr_train_no-{SKIP_RACE}_e{epoch + 1}_acc{acc:.3f}.pth",
     )
 
 print("Finished Training")

@@ -106,7 +106,7 @@ class DataFrame:
     def confusion_matrix_per_group(self):
         groups = self.data["Group"].unique()
         data = []
-        for group in groups:
+        for group in sorted(groups):
             metrics = self.confusion_matrix(group)
             metrics["Group"] = group
             data.append(metrics)

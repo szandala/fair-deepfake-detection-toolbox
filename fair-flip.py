@@ -14,7 +14,7 @@ feature_storage = {
     "races_list": [],
     "preds_list": [],
 }
-
+SKIP_RACE = "black"
 
 def classifier_input_hook(module, input_, output):
     """
@@ -162,8 +162,10 @@ def scale_last_layer_weights_multiply(model, std_class0, std_class1, alpha):
 if __name__ == "__main__":
 
     alpha = float(sys.argv[1])
+    model_path = float(sys.argv[2])
     # 1) Defaults
-    MODEL_PATH = "model_full_train_e12_acc0.887.pth"
+    MODEL_PATH = model_path
+    # "model_full_train_e12_acc0.887.pth"
     BATCH_SIZE = 32
     IMAGES_LIST_TXT = "work_on_train.txt"
     TEST_LIST_TXT = "work_on_test.txt"
@@ -177,7 +179,7 @@ if __name__ == "__main__":
     hook_handle = model.classifier.register_forward_hook(classifier_input_hook)
 
     # 4) Load Data
-    train_loader = _prepare_dataset_loader(IMAGES_LIST_TXT, batch_size=BATCH_SIZE)
+    train_loader = _prepare_dataset_loader(IMAGES_LIST_TXT, batch_size=BATCH_SIZE, SKIP_RACE=SKIP_RACE)
     test_loader = _prepare_dataset_loader(TEST_LIST_TXT, batch_size=BATCH_SIZE)
 
     # 5) Collect model's behaviour
@@ -217,6 +219,6 @@ if __name__ == "__main__":
     print(f"Accuracy after weight scaling: {acc_after:.3f}")
 
     # 10) Save new model
-    torch.save(model.state_dict(), f"fair-flip_alpha{alpha}.pth")
+    torch.save(model.state_dict(), f"fair-flip_models/fair-flip_no-{SKIP_RACE}_a{acc_after:.3f}_alpha{alpha}.pth")
 
     print("Done, I'm exciting :D")
